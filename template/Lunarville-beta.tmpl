@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+    <title>{{.Title}}</title>
+    <meta name="author" content="Ministry of Booze-Alchemy" />
+
+	<style>
+	h1 { margin-top: 5em; margin-bottom: 2em;}
+	</style>
+</head>
+<body>
+<center>
+<h1>Lunarville Internet of Beer</h1>
+</h1>
+<div id="fridgeData">
+{{range .Items}}<div>{{ . }}</div>{{else}}<div><strong>no rows</strong></div>{{end}}
+</div>
+</center>
+</body>
+</html>

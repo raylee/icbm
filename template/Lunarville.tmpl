@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+    <title>{{.Title}}</title>
+    <meta name="author" content="Ministry of Booze-Alchemy" />
+
+	<style>
+	h1 { margin-top: 2em; margin-bottom: 2em;}
+	</style>
+
+	<link rel="stylesheet" href="static/chartist.min.css">
+</head>
+<body>
+<center>
+<h1>Lunarville Needs Beer!</h1>
+<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+<input type="hidden" name="cmd" value="_s-xclick">
+<input type="hidden" name="hosted_button_id" value="7US5NS838Z8AA">
+<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" alt="Click here to keep the fridge full.">
+</form>
+</h1>
+<!--
+<div id="fridgeData">
+{{range .Items}}<div>{{ . }}</div>{{else}}<div><strong>no rows</strong></div>{{end}}
+</div>
+-->
+</center>
+<div class="ct-chart ct-golden-section"></div>
+</body>
+
+<script src="static/chartist.min.js"></script>
+<script src="static/moment.min.js"></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.5/lodash.min.js'></script>
+<script src='https://unpkg.com/axios@0.16.1/dist/axios.min.js'></script>
+
+<script>
+
+function chartData(tsv) {
+	var rows = tsv.split(/\r?\n/)
+	var data = []
+	for (var i = 0; i < rows.length; i++) {
+		var row=rows[i].split("\t")
+		if (row.length == 2) {
+			var datapoint = { x: new Date(parseInt(row[0] * 1000)), y: parseFloat(row[1])*100 }
+			data.push(datapoint)
+		}
+	}
+	var chart = new Chartist.Line('.ct-chart',
+		{
+			series: [ { name: 'ICBM', data: data } ]
+		}, {
+			axisY: {
+				type: Chartist.FixedScaleAxis,
+				high: 100,
+				low: 0,
+				ticks: [0,20,40,60,80,100]
+			},
+			lineSmooth: Chartist.Interpolation.step(),
+			showPoint: false,
+			axisX: {
+				type: Chartist.AutoScaleAxis,
+				divisor: 10,
+				labelInterpolationFnc: function(value) {
+					return moment(value).format('MMM D');
+				}
+			}
+		}
+	})
+}
+
+
+function init() {
+    var self = this
+    axios.get("data/Lunarville.tsv")
+		.then(
+			function (response) {
+				chartData(response.data)
+			})
+		.catch(
+			function (error) {
+				self.error = "Could not reach the API: " + error
+			})
+}
+
+init()
+</script>
+</html>

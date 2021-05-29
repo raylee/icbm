@@ -1,0 +1,10 @@
+{
+    "some-long-hash-here-generated-via-sha256sum": {
+        "Username":"testing key",
+        "Valid":true
+    },
+    "some-other-long-hash-here": {
+        "Username":"your-fridge",
+        "Valid":true
+    }
+}
