@@ -59,15 +59,15 @@ func processUpdate(u ICBMUpdate) error {
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		metrics.Errors++
-		return fmt.Errorf("Could not open data file for appending: %w", err)
+		return fmt.Errorf("could not open data file for appending: %w", err)
 	}
 	if _, err := f.Write([]byte(chartData)); err != nil {
 		metrics.Errors++
-		return fmt.Errorf("Could not append chartdata: %w", err)
+		return fmt.Errorf("could not append chartdata: %w", err)
 	}
 	if err := f.Close(); err != nil {
 		metrics.Errors++
-		return fmt.Errorf("Could not close written file: %w", err)
+		return fmt.Errorf("could not close written file: %w", err)
 	}
 	return trimFile(filename, 10000)
 }

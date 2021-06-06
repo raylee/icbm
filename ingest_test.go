@@ -12,7 +12,7 @@ func TestClamp(t *testing.T) {
 	}
 
 	// keeping it easy as 1/2^n is perfectly representable in standard floating point
-	if clamp(1/2, 0, 1) != 1/2 {
+	if clamp(0.5, 0, 1) != 0.5 {
 		t.Error("Clamp is not allowing safe values through")
 	}
 }
