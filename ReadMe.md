@@ -1,3 +1,5 @@
+![build](https://github.com/raylee/icbm/actions/workflows/build.yml/badge.svg)
+
 # Internet Connected Beverage Monitor server
 
 This is the source for the ICBM server code, as used to support the [Lunarville beer fridge](http://lunarville.org).
