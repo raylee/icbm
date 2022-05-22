@@ -203,10 +203,7 @@ func fqdns() []string {
 
 // superfly returns whether we're running on a fly.io instance
 func superfly() bool {
-	if os.Getenv("FLY_ALLOC_ID") != "" {
-		return true
-	}
-	return false
+	return os.Getenv("FLY_ALLOC_ID") != ""
 }
 
 // platform returns the platform name (fly.io) or an effectively random

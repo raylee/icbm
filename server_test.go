@@ -76,6 +76,6 @@ func TestServer(t *testing.T) {
 		t.Error("could not read response body")
 	}
 	if string(res) != "Fridge status updated for Lunarville-beta, thank you testbot\n" {
-		t.Error(fmt.Sprintf("\nReceived: %s\nExpected: %s\n", strings.TrimSpace(string(res)), "Fridge status updated for Lunarville-beta, thank you testbot"))
+		t.Errorf("\nReceived: %s\nExpected: %s\n", strings.TrimSpace(string(res)), "Fridge status updated for Lunarville-beta, thank you testbot")
 	}
 }
