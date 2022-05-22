@@ -54,7 +54,7 @@ func TestLastNth(t *testing.T) {
 }
 
 func TestTrimIdempotency(t *testing.T) {
-	var lineCount = 100
+	var lineCount = 1000
 	var extra = lineCount * 2
 	var buf bytes.Buffer
 

@@ -85,7 +85,7 @@ func icbmVersion(w http.ResponseWriter, r *http.Request) {
 		"  version: %s\n" +
 		"buildtime: %s\n" +
 		"  builder: %s\n"
-	io.WriteString(w, fmt.Sprintf(v, fqdn(), *httpaddr, *httpsaddr, Version, BuildTime, Builder))
+	io.WriteString(w, fmt.Sprintf(v, fqdns(), *httpaddr, *httpsaddr, Version, BuildTime, Builder))
 }
 
 func serve(tlsnames, httpaddr, httpsaddr string) (servers []*http.Server) {
@@ -98,7 +98,7 @@ func serve(tlsnames, httpaddr, httpsaddr string) (servers []*http.Server) {
 	startHTTP := func(srv *http.Server) { logUnsualClose(srv.ListenAndServe()) }
 	startTLS := func(srv *http.Server) { logUnsualClose(srv.ListenAndServeTLS("", "")) }
 
-	if tlsnames == "localhost" {
+	if tlsnames == "localhost" || strings.HasPrefix(httpaddr, "0") {
 		srv := &http.Server{
 			Addr:     httpaddr,
 			ErrorLog: logger,
@@ -106,6 +106,10 @@ func serve(tlsnames, httpaddr, httpsaddr string) (servers []*http.Server) {
 		}
 		go startHTTP(srv)
 		servers = append(servers, srv)
+		return
+	}
+
+	if httpsaddr == "" {
 		return
 	}
 
@@ -197,10 +201,27 @@ func fqdns() []string {
 	return hostnames
 }
 
-// fqdn returns an (effectively random) hostname from the set of valid fully
-// qualified domain names on this system.
-func fqdn() string {
-	return fqdns()[0]
+// superfly returns whether we're running on a fly.io instance
+func superfly() bool {
+	if os.Getenv("FLY_ALLOC_ID") != "" {
+		return true
+	}
+	return false
+}
+
+// platform returns the platform name (fly.io) or an effectively random
+// hostname from the set of valid fully qualified domain names on the
+// hosting virtual machine.
+func platform() string {
+	if superfly() {
+		return fmt.Sprintf("fly.io: %s / %s / %s", os.Getenv("FLY_APP_NAME"), os.Getenv("FLY_ALLOC_ID"), os.Getenv("FLY_REGION"))
+	}
+
+	fqs := fqdns()
+	if len(fqs) > 0 {
+		return fqdns()[0]
+	}
+	return ""
 }
 
 // getLogin looks for a validated API key and returns the credentials

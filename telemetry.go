@@ -46,7 +46,7 @@ type filterWriter struct {
 	filters []filter
 }
 
-// filterWriter's Write silently supresses lines which contain any needles in fw.filters.
+// filterWriter's Write silently suppresses lines which contain any needles in fw.filters.
 func (fw *filterWriter) Write(p []byte) (n int, err error) {
 	for _, f := range fw.filters {
 		if bytes.Contains(p, f.needle) {

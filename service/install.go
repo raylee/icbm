@@ -19,6 +19,7 @@ import (
 	"strings"
 )
 
+// Config contains the parameters for this service.
 type Config struct {
 	Name        string
 	Description string
@@ -117,7 +118,7 @@ func (c *Config) Install() error {
 	if err != nil {
 		return fmt.Errorf("could not install executable to home dir: %w", err)
 	}
-	c.StopService()
+	c.Stop()
 	// Always overwrite the systemd service definition to ensure it's up to date.
 	err = os.WriteFile(c.systemdFile(), serviceDef, 0644)
 	if err != nil {
@@ -137,6 +138,7 @@ func (c *Config) Install() error {
 	return nil
 }
 
+// Restart this service.
 func (c *Config) Restart() error {
 	if os.Geteuid() != 0 {
 		return fmt.Errorf("restart must be done as root")
@@ -144,7 +146,8 @@ func (c *Config) Restart() error {
 	return shell("systemctl restart " + c.Name)
 }
 
-func (c *Config) StopService() error {
+// Stop this service
+func (c *Config) Stop() error {
 	if os.Geteuid() != 0 {
 		return fmt.Errorf("stop must be done as root")
 	}
@@ -153,6 +156,7 @@ func (c *Config) StopService() error {
 	)
 }
 
+// Uninstall stops and disables this service, and removes the service's user account.
 func (c *Config) Uninstall() error {
 	if os.Geteuid() != 0 {
 		return fmt.Errorf("uninstall must be done as root")

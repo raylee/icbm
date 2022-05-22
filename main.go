@@ -29,9 +29,9 @@ Options:
 	-help                 this message
 
 Examples:
-	./icbm -http :7080 -https :7443 -tlshosts test.icbm.api.evq.io
+	./icbm -http :7080 -https :7443 -hostnames test.icbm.api.evq.io
 	./icbm -install
-	./icbm -http 127.0.0.99:80 -https 127.0.0.99:443 -tlshosts icbm.api.evq.io,INSTANCE.ZONE.c.PROJ.internal
+	./icbm -http 127.0.0.99:80 -https 127.0.0.99:443 -hostnames icbm.api.evq.io,INSTANCE.ZONE.c.PROJ.internal
 `
 
 var (
@@ -65,7 +65,12 @@ func main() {
 		logError(svc.Uninstall())
 		return
 	}
-	log.Println("hostname", fqdn(), "http", *httpaddr, "https", *httpsaddr,
+
+	platform := platform()
+	if superfly() {
+		platform = fmt.Sprintf("%s / %s / %s", os.Getenv("FLY_APP_NAME"), os.Getenv("FLY_ALLOC_ID"), os.Getenv("FLY_REGION"))
+	}
+	log.Println("hostnames", platform, "http", *httpaddr, "https", *httpsaddr,
 		"version", Version, "buildtime", BuildTime, "builder", Builder)
 
 	servers := serve(*tlsnames, *httpaddr, *httpsaddr)
