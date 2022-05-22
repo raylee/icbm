@@ -7,48 +7,69 @@ on:
     branches: [ main ]
 
 jobs:
+  test:
+    name: "Run unit tests"
+    strategy:
+      matrix:
+        os: ["ubuntu-latest"]
+        go: ["1.16.x"]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+        
+    - uses: WillAbides/setup-go-faster@v1.6.0
+      with:
+        go-version: ${{ matrix.go }}
+        
+    - run: "go test ./..."
+
+  lint:
+    name: "Run static analysis"
+    runs-on: "ubuntu-latest"
+    steps:
+    - uses: WillAbides/setup-go-faster@v1.6.0
+      with:
+        go-version: "*"
+    - run: "GO111MODULE=on go get honnef.co/go/tools/cmd/staticcheck"
+    
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+        
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/staticcheck
+        key: staticcheck-${{ github.sha }}
+        restore-keys: |
+          staticcheck-
+          
+    - run: "go vet ./..."
+    
+    - run: "$(go env GOPATH)/bin/staticcheck -go 1.16 ./..."
 
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-
     - name: Set env vars
       run: |
         echo "CGO_ENABLED=0" >> $GITHUB_ENV
 
-    - name: cache downloaded modules
-      uses: actions/cache@v2
+    - name: setup go
+      uses: WillAbides/setup-go-faster@v1.6.0
       with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-      
-    - name: cache incremental compile artifacts
-      uses: actions/cache@v2
-      with:
-        # In order:
-        # * Module download cache
-        # * Build cache (Linux)
-        # * Build cache (Mac)
-        # * Build cache (Windows)
-        path: |
-          ~/go/pkg/mod
-          ~/.cache/go-build
-          ~/Library/Caches/go-build
-          %LocalAppData%\go-build
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+        go-version: "*"
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
+    - name: checkout
+      uses: actions/checkout@v1
       with:
-        go-version: 1.16.x
+        fetch-depth: 1
 
     - name: Build
-      run: go build -v ./...
+      run: |
+        go env -w GOFLAGS=-trimpath
+        go build -v ./...
 
     - name: Test
       run: go test -v ./...
