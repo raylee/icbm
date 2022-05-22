@@ -32,7 +32,7 @@ jobs:
     - uses: WillAbides/setup-go-faster@v1.6.0
       with:
         go-version: "*"
-    - run: "GO111MODULE=on go get honnef.co/go/tools/cmd/staticcheck"
+    - run: "GO111MODULE=on go install honnef.co/go/tools/cmd/staticcheck@latest"
     
     - uses: actions/checkout@v1
       with:
