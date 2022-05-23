@@ -14,9 +14,9 @@ import (
 func payload(fridge string) string {
 	return `{
     "FridgeName":"` + fridge + `",
-    "RawMassFull": 800000, 
-    "RawMassTare": 300000, 
-    "RawSamples": [ 
+    "RawMassFull": 800000,
+    "RawMassTare": 300000,
+    "RawSamples": [
         { "PubFillRatio": 0.48296266666666665, "RawFillRatio": 0.612222, "RawMass": 606111, "Timestamp": "2018-09-13T05:11:32Z" },
         { "PubFillRatio": 0.491112, "RawFillRatio": 0.618334, "RawMass": 609167, "Timestamp": "2018-09-13T05:11:33Z" },
         { "PubFillRatio": 0.4992586666666667, "RawFillRatio": 0.624444, "RawMass": 612222, "Timestamp": "2018-09-13T05:11:34Z" },
