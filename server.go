@@ -60,8 +60,10 @@ func onHit(h http.Handler, counter *int64, duration *uint64) http.Handler {
 // Routes returns the mappings for handling web requests.
 func Routes() *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", BeverageStatus("Lunarville"))
-	mux.HandleFunc("/beta", BeverageStatus("Lunarville-beta"))
+	mux.Handle("/", assetSrv("static"))
+	// mux.HandleFunc("/", BeverageStatus("Lunarville"))
+	mux.HandleFunc("/bev", BeverageStatus("Lunarville"))
+	mux.HandleFunc("/bevbeta", BeverageStatus("Lunarville-beta"))
 	mux.HandleFunc("/icbm/v1", icbmUpdate)
 	willServeFor := []string{
 		"http://lunarville.org",
@@ -216,7 +218,7 @@ func platform() string {
 
 	fqs := fqdns()
 	if len(fqs) > 0 {
-		return fqdns()[0]
+		return fqs[0]
 	}
 	return ""
 }
