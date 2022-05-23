@@ -87,7 +87,7 @@ function chartData(tsv) {
 }
 
 function loadChartData() {
-    axios.defaults.baseURL = 'http://icbm.fly.dev/'
+    axios.defaults.baseURL = 'https://icbm.fly.dev/'
     var self = this
     axios.get("data/Lunarville.tsv")
 		.then(

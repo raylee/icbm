@@ -73,6 +73,7 @@ func Routes() *http.ServeMux {
 		"https://api.evq.io",
 		"https://icbm.api.evq.io",
 		"http://localhost:*",
+		"https://icbm.fly.dev",
 	}
 	mux.Handle("/data/", http.StripPrefix("/data/", cors(fileSrv("/data"), willServeFor...)))
 	mux.Handle("/static/", http.StripPrefix("/static/", assetSrv("static")))
