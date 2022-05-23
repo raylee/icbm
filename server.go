@@ -74,7 +74,7 @@ func Routes() *http.ServeMux {
 		"https://icbm.api.evq.io",
 		"http://localhost:*",
 	}
-	mux.Handle("/data/", http.StripPrefix("/data/", cors(fileSrv("data"), willServeFor...)))
+	mux.Handle("/data/", http.StripPrefix("/data/", cors(fileSrv("/data"), willServeFor...)))
 	mux.Handle("/static/", http.StripPrefix("/static/", assetSrv("static")))
 	mux.HandleFunc("/version", icbmVersion)
 	return mux
