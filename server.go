@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
@@ -243,12 +242,11 @@ type User struct {
 	Valid    bool
 }
 
-//go:embed icbmuserdb.json
-var userdbjson []byte
 var users = map[string]User{} // The key is the API key.
 
 func loadUserList() error {
-	j := bytes.NewReader(userdbjson)
+	userdb := os.Getenv("ICBMUserDb")
+	j := strings.NewReader(userdb)
 	dec := json.NewDecoder(j)
 	return dec.Decode(&users)
 }
