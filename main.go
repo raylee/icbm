@@ -36,12 +36,6 @@ var (
 	tlsnames  = flag.String("hostnames", "localhost", "a comma-separated list of our TLS hostnames")
 )
 
-func logError(err error) {
-	if err != nil {
-		log.Println(err)
-	}
-}
-
 func main() {
 	flag.Usage = func() { fmt.Fprint(os.Stderr, usage) }
 	flag.Parse()
