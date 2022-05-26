@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-
-	"github.com/raylee/icbm/service"
 )
 
 var ( // These three are set at buildtime.
@@ -24,8 +22,6 @@ Options:
 	-hostnames h1,h2,...  a comma-separated list of hostnames for autocert to honor
 	-http address         the http endpoint address (default: :80)
 	-https address        the https endpoint address (default: :443)
-	-install              adds user/group svc-icbm, systemd service, moves itself into place, and starts
-	-uninstall            stops service, removes user/group svc-icbm
 	-help                 this message
 
 Examples:
@@ -38,8 +34,6 @@ var (
 	httpaddr  = flag.String("http", ":80", "serve http on address:port")
 	httpsaddr = flag.String("https", ":443", "serve https on address:port")
 	tlsnames  = flag.String("hostnames", "localhost", "a comma-separated list of our TLS hostnames")
-	install   = flag.Bool("install", false, "install icbm as a system service")
-	uninstall = flag.Bool("uninstall", false, "disable the systemd service")
 )
 
 func logError(err error) {
@@ -51,20 +45,6 @@ func logError(err error) {
 func main() {
 	flag.Usage = func() { fmt.Fprint(os.Stderr, usage) }
 	flag.Parse()
-
-	svc := service.Config{
-		Name:        "icbm",
-		Description: "Internet Connected Beverage Monitor",
-		ExeName:     "web",
-	}
-	if *install {
-		logError(svc.Install())
-		return
-	}
-	if *uninstall {
-		logError(svc.Uninstall())
-		return
-	}
 
 	platform := platform()
 	if superfly() {
