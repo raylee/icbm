@@ -42,11 +42,10 @@ func randhex(bytes int) string {
 }
 
 func TestServer(t *testing.T) {
-	servers := serve("localhost", "0.0.0.0:8081", "")
-	defer shutdown(servers)
-
+	server := serve("0.0.0.0:8080")
+	defer shutdown(server)
 	body := strings.NewReader(payload("Lunarville-beta"))
-	req, err := http.NewRequest("POST", "http://localhost:8081/icbm/v1", body)
+	req, err := http.NewRequest("POST", "http://localhost:8080/icbm/v1", body)
 	if err != nil {
 		t.Error("Error building request")
 	}

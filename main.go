@@ -16,24 +16,18 @@ var ( // These three are set at buildtime.
 var usage = `
 Usage:
 	icbm
-	icbm [--http <address:port>] [--https <address:port>]
+	icbm [--http <address:port>]
 
 Options:
-	-hostnames h1,h2,...  a comma-separated list of hostnames for autocert to honor
 	-http address         the http endpoint address (default: :80)
-	-https address        the https endpoint address (default: :443)
 	-help                 this message
 
-Examples:
-	./icbm -http :7080 -https :7443 -hostnames test.icbm.api.evq.io
-	./icbm -install
-	./icbm -http 127.0.0.99:80 -https 127.0.0.99:443 -hostnames icbm.api.evq.io,INSTANCE.ZONE.c.PROJ.internal
+Example:
+	./icbm -http 0.0.0.0:8080   # listen on all interfaces on port 8080
 `
 
 var (
-	httpaddr  = flag.String("http", ":80", "serve http on address:port")
-	httpsaddr = flag.String("https", ":443", "serve https on address:port")
-	tlsnames  = flag.String("hostnames", "localhost", "a comma-separated list of our TLS hostnames")
+	httpaddr = flag.String("http", "0.0.0.0:80", "serve http on address:port")
 )
 
 func main() {
@@ -44,10 +38,10 @@ func main() {
 	if superfly() {
 		platform = fmt.Sprintf("%s / %s / %s", os.Getenv("FLY_APP_NAME"), os.Getenv("FLY_ALLOC_ID"), os.Getenv("FLY_REGION"))
 	}
-	log.Println("hostnames", platform, "http", *httpaddr, "https", *httpsaddr,
+	log.Println("hostnames", platform, "http", *httpaddr,
 		"version", Version, "buildtime", BuildTime, "builder", Builder)
 
-	servers := serve(*tlsnames, *httpaddr, *httpsaddr)
+	servers := serve(*httpaddr)
 	processSignals()
 	shutdown(servers)
 }

@@ -20,7 +20,6 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	corsMid "github.com/rs/cors"
-	"golang.org/x/crypto/acme/autocert"
 )
 
 // AssetFS holds our static web server assets.
@@ -83,63 +82,27 @@ func Routes() *http.ServeMux {
 func icbmVersion(w http.ResponseWriter, r *http.Request) {
 	v := " hostname: %s\n" +
 		"     http: %s\n" +
-		"    https: %s\n" +
 		"  version: %s\n" +
 		"buildtime: %s\n" +
 		"  builder: %s\n"
-	io.WriteString(w, fmt.Sprintf(v, fqdns(), *httpaddr, *httpsaddr, Version, BuildTime, Builder))
+	io.WriteString(w, fmt.Sprintf(v, fqdns(), *httpaddr, Version, BuildTime, Builder))
 }
 
-func serve(tlsnames, httpaddr, httpsaddr string) (servers []*http.Server) {
+func serve(httpaddr string) *http.Server {
 	logger := log.New(FilteredHTTPLogger(Italic(os.Stderr)), "", log.LstdFlags)
 	logUnsualClose := func(e error) {
 		if e != http.ErrServerClosed {
 			logger.Print(e)
 		}
 	}
-	startHTTP := func(srv *http.Server) { logUnsualClose(srv.ListenAndServe()) }
-	startTLS := func(srv *http.Server) { logUnsualClose(srv.ListenAndServeTLS("", "")) }
-
-	if tlsnames == "localhost" || strings.HasPrefix(httpaddr, "0") {
-		srv := &http.Server{
-			Addr:     httpaddr,
-			ErrorLog: logger,
-			Handler:  onHit(Routes(), &metrics.HTTP, &metrics.HTTPDuration),
-		}
-		go startHTTP(srv)
-		servers = append(servers, srv)
-		return
-	}
-
-	if httpsaddr == "" {
-		return
-	}
-
-	// Otherwise, we're an https server with autocert.
-	autocertmgr := &autocert.Manager{
-		Cache:      autocert.DirCache("secret"),
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(strings.Split(tlsnames, ",")...),
-	}
-	// With a nil Handler HTTP will only answer Let's Encrypt challenges and
-	// redirect clients to https on 443.
 	srv := &http.Server{
 		Addr:     httpaddr,
 		ErrorLog: logger,
-		Handler:  onHit(autocertmgr.HTTPHandler(nil), &metrics.HTTP, &metrics.HTTPDuration),
+		Handler:  onHit(Routes(), &metrics.HTTP, &metrics.HTTPDuration),
 	}
+	startHTTP := func(srv *http.Server) { logUnsualClose(srv.ListenAndServe()) }
 	go startHTTP(srv)
-	servers = append(servers, srv)
-
-	srv = &http.Server{
-		Addr:      httpsaddr,
-		TLSConfig: autocertmgr.TLSConfig(),
-		ErrorLog:  logger,
-		Handler:   onHit(Routes(), &metrics.HTTPS, &metrics.HTTPSDuration),
-	}
-	go startTLS(srv)
-	servers = append(servers, srv)
-	return
+	return srv
 }
 
 func processSignals() {
@@ -158,13 +121,11 @@ func processSignals() {
 	}
 }
 
-func shutdown(servers []*http.Server) {
+func shutdown(srv *http.Server) {
 	// Attempt a graceful shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	for _, srv := range servers {
-		go srv.Shutdown(ctx)
-	}
+	go srv.Shutdown(ctx)
 }
 
 // fqdns returns all the fully qualified domain names found on this system.
