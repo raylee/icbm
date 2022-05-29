@@ -146,7 +146,7 @@ func platform() string {
 		siblings, _ := net.LookupHost("_apps.internal")
 		x += fmt.Sprintf("host:     %s.fly.dev\n", os.Getenv("FLY_APP_NAME"))
 		x += fmt.Sprintf("listen:   %s\n", *httpaddr)
-		x += fmt.Sprintf("id:       %s\n" + os.Getenv("FLY_ALLOC_ID"))
+		x += fmt.Sprintf("id:       %s\n", os.Getenv("FLY_ALLOC_ID"))
 		x += fmt.Sprintf("region:   %s\n", os.Getenv("FLY_REGION"))
 		x += fmt.Sprintf("peers:    %s\n", peers)
 		x += fmt.Sprintf("regions:  %s\n", regions)
