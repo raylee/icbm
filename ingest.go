@@ -117,7 +117,11 @@ func trimFile(filename string, N int) error {
 	if err != nil {
 		return err
 	}
-	tmpfile, err := ioutil.TempFile("", "icbm-data-")
+	tmpDir := ""
+	if superfly() {
+		tmpDir = "/data"
+	}
+	tmpfile, err := ioutil.TempFile(tmpDir, "icbm-data-")
 	if err != nil {
 		return fmt.Errorf("could not create tempfile from filename %s: %w", filename, err)
 	}
@@ -131,7 +135,7 @@ func trimFile(filename string, N int) error {
 		return fmt.Errorf("error closing tempfile %s: %w", tmpfile.Name(), err)
 	}
 	if err := os.Rename(tmpfile.Name(), filename); err != nil {
-		return fmt.Errorf("Error renaming tempfile " + tmpfile.Name() + " to " + filename)
+		return fmt.Errorf("Error renaming tempfile %s to %s: %w", tmpfile.Name(), filename, err)
 	}
 	return nil
 }
