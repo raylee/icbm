@@ -1,0 +1,203 @@
+html,
+body,
+div {
+    padding: 0;
+    border: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: blue;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.backdrop {
+    /* opacity: 0.99; */
+  background-color: rgba(0,0,128,1);
+  height: 60vmin;
+  width: 60vmin;
+  transform: rotate(-0.03turn);
+  border-radius: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.beerglass {
+    height: 30vmin;
+    width: 28vmin;
+    border: 1vmin solid rgba(216, 228, 233);
+    border-radius: 0 0 10% 10%;
+    background-color: #F5A510;
+    xbackground: rgba(255, 255, 255, 0.21);
+    xborder-radius: 16px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    position: relative;
+    z-index: -20;
+}
+
+.glass__reflect1,
+.glass__reflect2 {
+    width: 2vmin;
+    border-radius: 2vmin;
+    background-color: ghostwhite;
+    position: absolute;
+    left: 10%;
+}
+
+.glass__reflect1 {
+    height: 8vmin;
+    top: 22.5%;
+}
+
+.glass__reflect2 {
+    top: 10%;
+    height: 2vmin;
+}
+
+.glass__shadow {
+    height: 28.1vmin;  
+    width: 6.2vmin;
+    border-radius: 0 0 2vmin 20%;
+    background-color: #D57406;
+ 
+    position: relative;
+    left: 76%;
+    z-index: -20;
+}
+
+.glass__froth1,
+.glass__froth2,
+.glass__froth3,
+.glass__froth4,
+.glass__froth5,
+.glass__froth6,
+.glass__froth7,
+.glass__froth8,
+.glass__froth9,
+.glass__froth10,
+.glass__froth11,
+.glass__froth12 {
+    width: 6.5vmin;
+    height: 6.5vmin;
+    border-radius: 100%;
+    background-color: rgba(248, 248, 255, 0.95);
+    position: relative;
+    z-index: -1;
+}
+
+.glass__froth1 {
+    bottom: 120%;
+    left: 1%;
+    background-color: rgba(248, 248, 255, 0.9);
+}
+
+.glass__froth2 {
+    bottom: 155%;
+    left: 5%;
+}
+
+.glass__froth3 {
+    bottom: 190%;
+    left: 20%;
+}
+
+.glass__froth4 {
+    bottom: 190%;
+    left: 40%;
+}
+
+.glass__froth5 {
+    bottom: 210%;
+    left: 20%;
+}
+
+.glass__froth6 {
+    bottom: 250%;
+    left: 23%;
+}
+
+.glass__froth7 {
+    bottom: 275%;
+    left: 40%;
+}
+
+.glass__froth8 {
+    bottom: 288%;
+    left: 58%;
+}
+
+.glass__froth9 {
+    bottom: 305%;
+    left: 75%;
+}
+
+.glass__froth10 {
+    bottom: 345%;
+    left: 60%;
+}
+
+.glass__froth11 {
+    bottom: 360%;
+    left: 68%;
+}
+
+.glass__froth12 {
+    bottom: 400%;
+    left: 42%;
+}
+
+.glass__handle {
+    width: 8vmin;
+    height: 18vmin;
+    border-radius: 50%;
+    border: 1.5vmin solid rgba(216, 228, 233);
+    box-shadow: inset 0 0 0 0.5vmin #acb6ba;
+    position: relative;
+    bottom: 365%;
+    left: 100%;
+}
+
+.glass__empty {
+    z-order: 5;
+    background-color: #fff;
+    height: 28.1vmin;  
+    width: 6.2vmin;
+    border-radius: 0 0 2vmin 20%; 
+    position: relative;
+    left: 76%;  
+}
+
+    <title>Beer</title>
+
+<div class="backdrop">
+    <div class="beerglass">
+        <div class="glass__shadow"></div>
+
+        <div class="glass__reflect1"></div>
+        <div class="glass__reflect2"></div>
+      
+        <div class="glass__froth1"></div>
+        <div class="glass__froth2"></div>
+        <div class="glass__froth3"></div>
+        <div class="glass__froth4"></div>
+        <div class="glass__froth5"></div>
+        <div class="glass__froth6"></div>
+        <div class="glass__froth7"></div>
+        <div class="glass__froth8"></div>
+        <div class="glass__froth9"></div>
+        <div class="glass__froth10"></div>
+        <div class="glass__froth11"></div>
+        <div class="glass__froth12"></div>
+
+        <div class="glass__handle"></div>
+		<div class="glass__empty"></div>
+
+  </div>
+</div>
