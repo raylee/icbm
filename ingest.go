@@ -135,7 +135,7 @@ func trimFile(filename string, N int) error {
 		return fmt.Errorf("error closing tempfile %s: %w", tmpfile.Name(), err)
 	}
 	if err := os.Rename(tmpfile.Name(), filename); err != nil {
-		return fmt.Errorf("Error renaming tempfile %s to %s: %w", tmpfile.Name(), filename, err)
+		return fmt.Errorf("error renaming tempfile %s to %s: %w", tmpfile.Name(), filename, err)
 	}
 	return nil
 }
