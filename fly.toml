@@ -16,7 +16,7 @@ processes = []
 [experimental]
   allowed_public_ports = []
   auto_rollback = true
-  cmd = ["icbm", "-http", "0.0.0.0:8080", "-https", ""]
+  cmd = ["icbm", "-http", "0.0.0.0:8080"]
   private_network = true
 
 [mounts]
