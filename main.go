@@ -27,7 +27,7 @@ var (
 func main() {
 	flag.Usage = func() { fmt.Fprint(os.Stderr, usage) }
 	flag.Parse()
-	log.Println(ident())
+	log.Println(platform())
 
 	server := serve(*httpaddr)
 	processSignals()

@@ -93,15 +93,8 @@ func Routes() *http.ServeMux {
 	return mux
 }
 
-func ident() string {
-	return fmt.Sprintf("host:       %s\n"+
-		"http:       %s\n"+
-		platform(),
-		*httpaddr)
-}
-
 func icbmVersion(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, ident())
+	io.WriteString(w, platform())
 }
 
 func serve(httpaddr string) *http.Server {
@@ -138,41 +131,30 @@ func shutdown(srv *http.Server) {
 	go srv.Shutdown(ctx)
 }
 
-// superfly returns whether we're running on a fly.io instance
+// superfly returns whether we're running on a fly.io instance.
 func superfly() bool {
 	return os.Getenv("FLY_ALLOC_ID") != ""
-}
-
-func flyNeighbors() string {
-	if !superfly() {
-		return ""
-	}
-
-	// Every instance of every application in your organization now has an additional IPv6 address — its “6PN address”, in /etc/hosts as fly-local-6pn. That address is reachable only within your organization. Bind services to it that you want to run privately.
-
-	// It’s pretty inefficient to connect two IPv6 endpoints by randomly guessing IPv6 addresses, so we use the DNS to make some introductions. Each of your Fly apps now has an internal DNS zone. If your application is fearsome-bagel-43, its DNS zone is fearsome-bagel-43.internal — that DNS resolves to all the IPv6 6PN addresses deployed for the application. You can find hosts by region: nrt.fearsome-bagel-43.internal are your instances in Japan. You can find all the regions for your application: the TXT record at regions.fearsom-bagel-43.internal. And you can find the “sibling” apps in your organization with the TXT record at _apps.internal.
-
-	peers, _ := net.LookupHost("icbm.internal")
-	regions, _ := net.LookupTXT("icbm.internal")
-	siblings, _ := net.LookupHost("_apps.internal")
-	return fmt.Sprintf("peers: %s\nregions: %s\nsiblings: %s\n", peers, regions, siblings)
 }
 
 // platform returns the platform name and details (for fly.io) or the
 // hostname of the hosting virtual machine.
 func platform() string {
 	if superfly() {
-		return fmt.Sprintf(
-			"host:   %s.fly.dev\n"+
-				"id:     %s\n"+
-				"region: %s\n",
-			os.Getenv("FLY_APP_NAME"),
-			os.Getenv("FLY_ALLOC_ID"),
-			os.Getenv("FLY_REGION"),
-		) + flyNeighbors()
+		var x string
+		peers, _ := net.LookupHost("icbm.internal")
+		regions, _ := net.LookupTXT("icbm.internal")
+		siblings, _ := net.LookupHost("_apps.internal")
+		x += fmt.Sprintf("host:     %s.fly.dev\n", os.Getenv("FLY_APP_NAME"))
+		x += fmt.Sprintf("listen:   %s\n", *httpaddr)
+		x += fmt.Sprintf("id:       %s\n" + os.Getenv("FLY_ALLOC_ID"))
+		x += fmt.Sprintf("region:   %s\n", os.Getenv("FLY_REGION"))
+		x += fmt.Sprintf("peers:    %s\n", peers)
+		x += fmt.Sprintf("regions:  %s\n", regions)
+		x += fmt.Sprintf("siblings: %s\n", siblings)
+		return x
 	}
 	hostname, _ := os.Hostname()
-	return hostname
+	return fmt.Sprintf("%s, %s\n", hostname, *httpaddr)
 }
 
 // getLogin looks for a validated API key and returns the credentials
