@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 )
 
@@ -70,6 +71,13 @@ func processUpdate(u ICBMUpdate) error {
 	return trimFile(filename, 10000)
 }
 
+var disallowed = regexp.MustCompile(`[^[:alnum:]-.]`)
+
+// sanitize returns a copy of x without any disallowed characters
+func sanitize(x string) string {
+	return disallowed.ReplaceAllString(x, "")
+}
+
 // icbmUpdate handles the POST of new fridge data, including checking credentials
 func icbmUpdate(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
@@ -92,6 +100,8 @@ func icbmUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	data.FridgeName = sanitize(data.FridgeName)
+
 	err := processUpdate(data)
 	if err != nil {
 		log.Println("Error processing update:", err)
