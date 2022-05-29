@@ -45,6 +45,19 @@ func fileSrv(path string) http.Handler {
 	return gziphandler.GzipHandler(http.FileServer(http.Dir(path)))
 }
 
+func fileSrvPicky(path string) http.Handler {
+	return maybeCompress(http.FileServer(http.Dir(path)))
+}
+
+func maybeCompress(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, ".gz") {
+			h = gziphandler.GzipHandler(h)
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
 func onHit(h http.Handler, counter *int64, duration *uint64) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt64(counter, 1)
@@ -74,6 +87,7 @@ func Routes() *http.ServeMux {
 		"https://icbm.fly.dev",
 	}
 	mux.Handle("/data/", http.StripPrefix("/data/", cors(fileSrv("/data"), willServeFor...)))
+	mux.Handle("/datanz/", http.StripPrefix("/datanz/", cors(fileSrvPicky("/data"), willServeFor...)))
 	mux.Handle("/static/", http.StripPrefix("/static/", assetSrv("static")))
 	mux.HandleFunc("/version", icbmVersion)
 	return mux

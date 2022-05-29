@@ -106,7 +106,11 @@ func Italic(f *os.File) io.Writer {
 
 // dataPath returns a path in the /data folder joined by []subdirs underneath it.
 func dataPath(subdirs ...string) string {
-	ee := append([]string{"/data"}, subdirs...) // full path to target
+	root := ""
+	if superfly() {
+		root = "/data"
+	}
+	ee := append([]string{root}, subdirs...) // full path to target
 
 	filename := path.Join(ee...)
 	dir := filepath.Dir(filename)
