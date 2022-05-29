@@ -1,0 +1,9 @@
+_*
+.env
+
+data/
+icbmuserdb.json
+
+icbm
+icbm-linux-amd64
+.DS_Store
