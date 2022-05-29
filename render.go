@@ -16,7 +16,7 @@ const (
 
 var (
 	tmpl    *template.Template
-	History = map[string][]Sample{} // History is a cache of the most recent data per fridge.
+	history = map[string][]Sample{} // History is a cache of the most recent data per fridge.
 )
 
 func init() {
@@ -40,9 +40,9 @@ func renderPage(fridge string) string {
 	}{Title: "Lunarville beer collective - " + fridge}
 
 	// just show the last five samples, descending order
-	samples := len(History[fridge])
+	samples := len(history[fridge])
 	for i := 1; i <= 5 && i < samples; i++ {
-		data.Items = append(data.Items, fmt.Sprintf("%v", History[fridge][samples-i]))
+		data.Items = append(data.Items, fmt.Sprintf("%v", history[fridge][samples-i]))
 	}
 
 	var res bytes.Buffer

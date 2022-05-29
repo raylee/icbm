@@ -96,14 +96,8 @@ func Routes() *http.ServeMux {
 func ident() string {
 	return fmt.Sprintf("host:       %s\n"+
 		"http:       %s\n"+
-		"version     %s\n"+
-		"buildtime:  %s\n"+
-		"builder:    %s\n",
 		platform(),
-		*httpaddr,
-		Version,
-		BuildTime,
-		Builder)
+		*httpaddr)
 }
 
 func icbmVersion(w http.ResponseWriter, r *http.Request) {
@@ -112,17 +106,16 @@ func icbmVersion(w http.ResponseWriter, r *http.Request) {
 
 func serve(httpaddr string) *http.Server {
 	logger := log.New(FilteredHTTPLogger(Italic(os.Stderr)), "", log.LstdFlags)
-	logUnsualClose := func(e error) {
-		if e != http.ErrServerClosed {
-			logger.Print(e)
-		}
-	}
 	srv := &http.Server{
 		Addr:     httpaddr,
 		ErrorLog: logger,
 		Handler:  onHit(Routes(), &metrics.HTTP, &metrics.HTTPDuration),
 	}
-	startHTTP := func(srv *http.Server) { logUnsualClose(srv.ListenAndServe()) }
+	startHTTP := func(srv *http.Server) {
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			logger.Print(err)
+		}
+	}
 	go startHTTP(srv)
 	return srv
 }
@@ -131,8 +124,8 @@ func processSignals() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGUSR1)
 	for {
-		switch <-c {
-		case syscall.SIGINT:
+		sig := <-c
+		if sig == syscall.SIGINT {
 			return
 		}
 	}

@@ -33,7 +33,7 @@ type Metrics struct {
 }
 
 var metrics = Metrics{}
-var StatsChan chan Sample = AggregateUpdates() // StatsChan aggregates samples written to it.
+var statsChan chan Sample = AggregateUpdates() // StatsChan aggregates samples written to it.
 
 type filter struct {
 	needle  []byte

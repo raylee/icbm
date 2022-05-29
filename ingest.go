@@ -44,17 +44,17 @@ func processUpdate(u ICBMUpdate) error {
 	log.Printf("Update saved to %s\n", filename)
 	chartData := ""
 	for _, s := range u.StableSamples {
-		History[u.FridgeName] = append(History[u.FridgeName], s)
+		history[u.FridgeName] = append(history[u.FridgeName], s)
 		x := clamp(s.PubFillRatio, 0.0, 1.0)
 		chartData += fmt.Sprintf("%d\t%g\n", s.Timestamp.Unix(), x)
 		metrics.DataPoints++
-		StatsChan <- s
+		statsChan <- s
 	}
 
-	excess := len(History[u.FridgeName]) - maxHistory
+	excess := len(history[u.FridgeName]) - maxHistory
 	if excess > 0 {
-		copy(History[u.FridgeName], History[u.FridgeName][excess:])
-		History[u.FridgeName] = History[u.FridgeName][0:maxHistory]
+		copy(history[u.FridgeName], history[u.FridgeName][excess:])
+		history[u.FridgeName] = history[u.FridgeName][0:maxHistory]
 	}
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -112,8 +112,8 @@ func icbmUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // trimFile preserves the last N lines of contents of filename, removing all before.
-func trimFile(filename string, N int) error {
-	content, err := tail(filename, N)
+func trimFile(filename string, n int) error {
+	content, err := tail(filename, n)
 	if err != nil {
 		return err
 	}

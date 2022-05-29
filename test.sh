@@ -3,9 +3,7 @@
 source .env || true
 
 check-requirements() {
-    silent type icbmUserDb || panic \
-        "icbmUserDb needs to be a shell function or executable in the path." \
-        "When invoked, it should print the JSON for the icbm user database."
+    [ -n "$ICBMUserDb" ] || panic "please export ICBMUserDb='{json}'."
     [ -n "$APITESTKEY" ] || panic "Please export the environment variable APITESTKEY=<icbm-fridge-test-key> and try again."
 }
 
@@ -81,18 +79,17 @@ try() {
 }
 
 test-icbm() {
-    info "$(api -X GET https://icbm.api.evq.io/version)"
     info "$(api -X GET https://lunarville.org/version)"
-
-    try post https://lunarville.org/icbm/v1 "$(payload Lunarville-beta)"
-    try post https://icbm.api.evq.io/icbm/v1 "$(payload Lunarville-beta)"
-    try post https://api.evq.io:8081/icbm/v1 "$(payload Lunarville-beta)"
-
-    try get https://icbm.api.evq.io/data/Lunarville.tsv
-    try get https://api.evq.io:8081/data/Lunarville.tsv
     try get http://lunarville.org/
+    try post https://lunarville.org/icbm/v1 "$(payload Lunarville-beta)"
     try get https://lunarville.org/data/Lunarville.tsv
 
+    info "Testing proxy (old addresses)"
+    info "$(api -X GET https://icbm.api.evq.io/version)"
+    try post https://icbm.api.evq.io/icbm/v1 "$(payload Lunarville-beta)"
+    try get https://icbm.api.evq.io/version
+    try get https://api.evq.io:8081/version
+    try get http://icbm.api.evq.io/version
     exit $ExitCode
 }
 
