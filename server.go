@@ -189,5 +189,7 @@ func loadUserList() error {
 func init() {
 	if err := loadUserList(); err != nil {
 		log.Println("Could not load user database, server will be read-only:", err)
+	} else {
+		log.Printf("User database loaded, %d entries\n", len(users))
 	}
 }
