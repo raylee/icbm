@@ -34,14 +34,10 @@ func main() {
 	flag.Usage = func() { fmt.Fprint(os.Stderr, usage) }
 	flag.Parse()
 
-	platform := platform()
-	if superfly() {
-		platform = fmt.Sprintf("%s / %s / %s", os.Getenv("FLY_APP_NAME"), os.Getenv("FLY_ALLOC_ID"), os.Getenv("FLY_REGION"))
-	}
-	log.Println("hostnames", platform, "http", *httpaddr,
+	log.Println("host", platform(), "http", *httpaddr,
 		"version", Version, "buildtime", BuildTime, "builder", Builder)
 
-	servers := serve(*httpaddr)
+	server := serve(*httpaddr)
 	processSignals()
-	shutdown(servers)
+	shutdown(server)
 }

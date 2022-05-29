@@ -40,7 +40,6 @@ func clamp(x, low, high float64) float64 {
 // processUpdate takes a set of samples and appends them to the correct history
 func processUpdate(u ICBMUpdate) error {
 	filename := localPath(u.FridgeName + ".tsv")
-	// data := loadHistory(filename)
 	chartData := ""
 	for _, s := range u.StableSamples {
 		History[u.FridgeName] = append(History[u.FridgeName], s)
@@ -49,11 +48,10 @@ func processUpdate(u ICBMUpdate) error {
 		metrics.DataPoints++
 		StatsChan <- s
 	}
+
 	excess := len(History[u.FridgeName]) - maxHistory
 	if excess > 0 {
-		for i := 0; i < maxHistory; i++ {
-			History[u.FridgeName][i] = History[u.FridgeName][i+excess]
-		}
+		copy(History[u.FridgeName], History[u.FridgeName][excess:])
 		History[u.FridgeName] = History[u.FridgeName][0:maxHistory]
 	}
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -128,7 +126,7 @@ func trimFile(filename string, N int) error {
 }
 
 // tail acts like the unix command of the same name. Warning: this reads the
-// whole file into memory. It's optimum for ICBM's use case but not in general.
+// whole file into memory. It's optimal for ICBM's use case but not in general.
 func tail(filename string, lines int) ([]byte, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {

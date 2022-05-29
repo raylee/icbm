@@ -22,11 +22,11 @@ import (
 	corsMid "github.com/rs/cors"
 )
 
-// AssetFS holds our static web server assets.
+// AssetFS holds the contents of the static/** and template/** folders.
 //go:embed static template
 var AssetFS embed.FS
 
-// cors take a Handler and a list of allowed origin domains and returns a new
+// cors takes a Handler and a list of allowed origin domains and returns a new
 // Handler that enforces CORS to those sources.
 func cors(next http.Handler, origins ...string) http.Handler {
 	c := corsMid.New(corsMid.Options{AllowedOrigins: origins, AllowCredentials: true, MaxAge: 300})
@@ -80,12 +80,11 @@ func Routes() *http.ServeMux {
 }
 
 func icbmVersion(w http.ResponseWriter, r *http.Request) {
-	v := " hostname: %s\n" +
-		"     http: %s\n" +
+	v := "     http: %s\n" +
 		"  version: %s\n" +
 		"buildtime: %s\n" +
 		"  builder: %s\n"
-	io.WriteString(w, fmt.Sprintf(v, fqdns(), *httpaddr, Version, BuildTime, Builder))
+	io.WriteString(w, fmt.Sprintf(v, *httpaddr, Version, BuildTime, Builder))
 }
 
 func serve(httpaddr string) *http.Server {
@@ -110,11 +109,6 @@ func processSignals() {
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGUSR1)
 	for {
 		switch <-c {
-		// case syscall.SIGUSR1:
-		// log.Infof("Received SIGUSR1, reloading certificate and key from %s and %s", cert, key)
-		// if err := srv.ReloadCerts(); err != nil {
-		// 	log.Errorf("Could not update certificates: %v", err)
-		// }
 		case syscall.SIGINT:
 			return
 		}
@@ -128,63 +122,43 @@ func shutdown(srv *http.Server) {
 	go srv.Shutdown(ctx)
 }
 
-// fqdns returns all the fully qualified domain names found on this system.
-func fqdns() []string {
-	// todo: collect names into two lists, internal and external.
-	// return append(external, internal) to give priority to global IP names.
-	var hostnames []string
-	hostname, err := os.Hostname()
-	if err != nil {
-		return append(hostnames, "(unknown)")
-	}
-
-	addrs, err := net.LookupIP(hostname)
-	if err != nil {
-		return append(hostnames, hostname)
-	}
-
-	for _, addr := range addrs {
-		if ipv4 := addr.To4(); ipv4 != nil {
-			ip, err := ipv4.MarshalText()
-			if err != nil {
-				continue
-			}
-			hosts, err := net.LookupAddr(string(ip))
-			if err != nil || len(hosts) == 0 {
-				continue
-			}
-			for _, h := range hosts {
-				if strings.Count(h, ".") > 1 {
-					hostnames = append(hostnames, strings.TrimSuffix(h, "."))
-				}
-			}
-		}
-	}
-
-	return hostnames
-}
-
 // superfly returns whether we're running on a fly.io instance
 func superfly() bool {
 	return os.Getenv("FLY_ALLOC_ID") != ""
 }
 
-// platform returns the platform name (fly.io) or an effectively random
-// hostname from the set of valid fully qualified domain names on the
-// hosting virtual machine.
-func platform() string {
-	if superfly() {
-		return fmt.Sprintf("fly.io: %s / %s / %s", os.Getenv("FLY_APP_NAME"), os.Getenv("FLY_ALLOC_ID"), os.Getenv("FLY_REGION"))
+func flyNeighbors() string {
+	if !superfly() {
+		return ""
 	}
 
-	fqs := fqdns()
-	if len(fqs) > 0 {
-		return fqs[0]
+	// Every instance of every application in your organization now has an additional IPv6 address — its “6PN address”, in /etc/hosts as fly-local-6pn. That address is reachable only within your organization. Bind services to it that you want to run privately.
+
+	// It’s pretty inefficient to connect two IPv6 endpoints by randomly guessing IPv6 addresses, so we use the DNS to make some introductions. Each of your Fly apps now has an internal DNS zone. If your application is fearsome-bagel-43, its DNS zone is fearsome-bagel-43.internal — that DNS resolves to all the IPv6 6PN addresses deployed for the application. You can find hosts by region: nrt.fearsome-bagel-43.internal are your instances in Japan. You can find all the regions for your application: the TXT record at regions.fearsom-bagel-43.internal. And you can find the “sibling” apps in your organization with the TXT record at _apps.internal.
+
+	peers, _ := net.LookupHost("icbm.internal")
+	regions, _ := net.LookupTXT("icbm.internal")
+	siblings, _ := net.LookupHost("_apps.internal")
+	return fmt.Sprintf("peers: %s\nregions: %s\nsiblings: %s\n", peers, regions, siblings)
+}
+
+// platform returns the platform name and details (for fly.io) or the
+// hostname of the hosting virtual machine.
+func platform() string {
+	if superfly() {
+		return fmt.Sprintf(
+			"fly.io: %s / %s / %s\n",
+			os.Getenv("FLY_APP_NAME"),
+			os.Getenv("FLY_ALLOC_ID"),
+			os.Getenv("FLY_REGION"),
+		) + flyNeighbors()
 	}
-	return ""
+	hostname, _ := os.Hostname()
+	return hostname
 }
 
 // getLogin looks for a validated API key and returns the credentials
+// or nil on failure.
 func getLogin(w http.ResponseWriter, r *http.Request) *User {
 	apikey := r.Header.Get("x-icbm-api-key")
 	creds, found := users[apikey]

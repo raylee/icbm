@@ -68,11 +68,11 @@ func TestTrimIdempotency(t *testing.T) {
 		t.Error("Couldn't write test data")
 	}
 
-	if err := trimFile(fn, lineCount); err != nil {
-		t.Error("Couldn't trim test file")
-	}
-	if err := trimFile(fn, lineCount); err != nil {
-		t.Error("Couldn't trim test file")
+	// try it a few times
+	for i := 0; i < 2; i++ {
+		if err := trimFile(fn, lineCount); err != nil {
+			t.Error("Couldn't trim test file")
+		}
 	}
 
 	content, err := ioutil.ReadFile(fn)
