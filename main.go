@@ -33,7 +33,7 @@ var (
 func main() {
 	flag.Usage = func() { fmt.Fprint(os.Stderr, usage) }
 	flag.Parse()
-	log.Printf(ident())
+	log.Println(ident())
 
 	server := serve(*httpaddr)
 	processSignals()
