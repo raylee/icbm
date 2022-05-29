@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+
+<head>
+<title>Beer</title>
+<style>
 html,
 body,
 div {
@@ -8,7 +13,7 @@ div {
 }
 
 body {
-    background-color: blue;
+    background-color: black;
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -17,7 +22,7 @@ body {
 
 .backdrop {
     /* opacity: 0.99; */
-  background-color: rgba(0,0,128,1);
+  background-color: #007;
   height: 60vmin;
   width: 60vmin;
   transform: rotate(-0.03turn);
@@ -33,13 +38,7 @@ body {
     border: 1vmin solid rgba(216, 228, 233);
     border-radius: 0 0 10% 10%;
     background-color: #F5A510;
-    xbackground: rgba(255, 255, 255, 0.21);
-    xborder-radius: 16px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
     position: relative;
-    z-index: -20;
 }
 
 .glass__reflect1,
@@ -57,19 +56,29 @@ body {
 }
 
 .glass__reflect2 {
-    top: 10%;
     height: 2vmin;
+    top: 10%;
+}
+
+.glass__empty {
+    left: -1%;
+    background-color: ghostwhite;
+    position: absolute;
+    top: -0.1vmin;
+    width: 102%;
+    height: 28vmin;
+    padding: 0px;
+    clip-path: polygon(0% 0%, 0% 0%, 100% 0%, 100% 0%);
 }
 
 .glass__shadow {
-    height: 28.1vmin;  
+    height: 28.1vmin;
     width: 6.2vmin;
-    border-radius: 0 0 2vmin 20%;
+    border-radius: 0 0 2vmin 40%;
     background-color: #D57406;
- 
+
     position: relative;
     left: 76%;
-    z-index: -20;
 }
 
 .glass__froth1,
@@ -163,26 +172,17 @@ body {
     bottom: 365%;
     left: 100%;
 }
+</style>
+</head>
 
-.glass__empty {
-    z-order: 5;
-    background-color: #fff;
-    height: 28.1vmin;  
-    width: 6.2vmin;
-    border-radius: 0 0 2vmin 20%; 
-    position: relative;
-    left: 76%;  
-}
-
-    <title>Beer</title>
-
+<body>
 <div class="backdrop">
     <div class="beerglass">
         <div class="glass__shadow"></div>
 
         <div class="glass__reflect1"></div>
         <div class="glass__reflect2"></div>
-      
+
         <div class="glass__froth1"></div>
         <div class="glass__froth2"></div>
         <div class="glass__froth3"></div>
@@ -198,6 +198,79 @@ body {
 
         <div class="glass__handle"></div>
 		<div class="glass__empty"></div>
-
-  </div>
+    </div>
 </div>
+</body>
+
+<script>
+    var bbl = {
+        el:     document.querySelectorAll('div[class^=glass__froth]'),
+        jitter: Array.from(Array(12), () => { return Math.random() * 8; }),
+        order:  [12,11,10,2,3,9,7,6,4,8,5,1],
+        time:   0,
+        toPop:  0,
+        left:   12,
+
+        pop: function(toPop) {
+            this.toPop = toPop
+            window.setTimeout(bbl.shimmer, 2000, this)
+        },
+
+        shimmer: function(bbl) {
+            var keep = 12 - bbl.toPop
+            if (bbl.left <= keep) {
+                return
+            }
+            window.setTimeout(bbl.shimmer, 250, bbl)
+            bbl.time += 1
+            var bubble = bbl.order[0] - 1
+            if (bbl.time < bbl.jitter[0]) {
+                // shimmer a bit before we go
+                f =  Math.random()
+                f += 0.8 * (1.0-f)  // nudge f toward 1.0
+                p =  100 * f
+                bbl.el[bubble].style.backgroundColor = "rgba(248,248,255," + p + "%)"
+                return
+            }
+            // poparoo
+            bbl.jitter.shift()
+            bbl.order.shift()
+            bbl.left -= 1
+            bbl.time = 0
+            console.log({bbl, bubble})
+            bbl.el[bubble].style.backgroundColor = "rgba(0,0,0,0)"
+        }
+    }
+
+    var beer = {
+        fill: function(pct) {
+            pct = Math.min(1.0, Math.max(0, pct))
+            pct = (1.0 - pct)*100 // flip to percent empty
+            let poly="polygon(0% 0%, 0% " + (pct*1.1-10) + "%, 100% " +(pct*1.2) + "%, 100% 0%)"
+            let b=document.querySelector('.glass__empty')
+            b.style.clipPath = poly
+        },
+
+        slosh: function(fillPct) {
+            this.f = fillPct
+            window.setTimeout(this.jostle, 60, this)
+        },
+        time: 0,
+        tC: 20,
+        jostle: function(beer) {
+            beer.time += 1.0/beer.tC
+            beer.fill(beer.f + 0.1 * Math.sin(beer.time) * Math.exp(-beer.time))
+            if (beer.time > beer.tC*3) {
+                beer.fill(beer.f)
+                return
+            }
+            window.setTimeout(beer.jostle, 60, beer)
+        }
+    }
+
+    // beer.fill(0.85)
+    bbl.pop(1)
+    beer.slosh(0.90)
+</script>
+
+</html>
