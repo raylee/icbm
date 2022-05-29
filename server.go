@@ -166,7 +166,6 @@ func getLogin(w http.ResponseWriter, r *http.Request) *User {
 		metrics.BadLogins++
 		return nil
 	}
-
 	metrics.APILogins++
 	return &creds
 }
