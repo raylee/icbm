@@ -104,13 +104,9 @@ func Italic(f *os.File) io.Writer {
 	return &italic{f}
 }
 
-// localPath builds an absolute pathname, including the path which
-// contains this executable, joined by []subdirs underneath it
-func localPath(subdirs ...string) string {
-	ex, _ := os.Executable()                           // get the path to this executable
-	abs, _ := filepath.Abs(ex)                         // resolve it to the root
-	folder := filepath.Dir(abs)                        // find the containing folder
-	ee := append([]string{folder, "data"}, subdirs...) // full path to target
+// dataPath returns a path in the /data folder joined by []subdirs underneath it.
+func dataPath(subdirs ...string) string {
+	ee := append([]string{"/data"}, subdirs...) // full path to target
 
 	filename := path.Join(ee...)
 	dir := filepath.Dir(filename)
@@ -122,7 +118,7 @@ func localPath(subdirs ...string) string {
 func logData(u ICBMUpdate, rawData []byte) {
 	now := time.Now()
 	filename := now.Format("20060102150405") + ".json"
-	pathname := localPath(u.FridgeName, filename) + ".gz"
+	pathname := dataPath(u.FridgeName, filename) + ".gz"
 
 	f, e := os.Create(pathname)
 	if e != nil {
