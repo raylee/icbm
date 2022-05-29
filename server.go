@@ -79,12 +79,21 @@ func Routes() *http.ServeMux {
 	return mux
 }
 
+func ident() string {
+	return fmt.Sprintf("host:       %s\n"+
+		"http:       %s\n"+
+		"version     %s\n"+
+		"buildtime:  %s\n"+
+		"builder:    %s\n",
+		platform(),
+		*httpaddr,
+		Version,
+		BuildTime,
+		Builder)
+}
+
 func icbmVersion(w http.ResponseWriter, r *http.Request) {
-	v := "     http: %s\n" +
-		"  version: %s\n" +
-		"buildtime: %s\n" +
-		"  builder: %s\n"
-	io.WriteString(w, fmt.Sprintf(v, *httpaddr, Version, BuildTime, Builder))
+	io.WriteString(w, ident())
 }
 
 func serve(httpaddr string) *http.Server {
@@ -147,7 +156,9 @@ func flyNeighbors() string {
 func platform() string {
 	if superfly() {
 		return fmt.Sprintf(
-			"fly.io: %s / %s / %s\n",
+			"host:   %s.fly.dev\n"+
+				"id:     %s\n"+
+				"region: %s\n",
 			os.Getenv("FLY_APP_NAME"),
 			os.Getenv("FLY_ALLOC_ID"),
 			os.Getenv("FLY_REGION"),

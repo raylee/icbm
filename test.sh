@@ -1,10 +1,21 @@
 #!/bin/bash
 
-source .env
+source .env || true
+
+check-requirements() {
+    silent type icbmUserDb || panic \
+        "icbmUserDb needs to be a shell function or executable in the path." \
+        "When invoked, it should print the JSON for the icbm user database."
+    [ -n "$APITESTKEY" ] || panic "Please export the environment variable APITESTKEY=<icbm-fridge-test-key> and try again."
+}
 
 log() {
-    # shellcheck disable=2059
-    printf >&2 "$@"
+    printf >&2 "%s\n" "$@"
+}
+
+panic() {
+    log "$@"
+    exit 1
 }
 
 silent() {
@@ -60,10 +71,10 @@ try() {
     output=$("$@")
     case $? in
         0)
-            info "PASS  %-4s  %-50s %s\n" "$cmd" "$url"
+            info "$(printf "PASS  %-4s  %-50s\n" "$cmd" "$url")"
             ;;
         *)
-            log "FAIL  %-4s  %-50s %s\n" "$cmd" "$url" "$output ($?)"
+            log "$(printf "FAIL  %-4s  %-50s %s\n" "$cmd" "$url" "$output ($?)")"
             ExitCode=2
             ;;
     esac
@@ -85,9 +96,17 @@ test-icbm() {
     exit $ExitCode
 }
 
-info() { true; }
-case $1 in
-    -v|--verbose) info() { log "$@"; } ;;
-esac
+main() {
+    check-requirements
+    # Define a default "info" function which does nothing.
+    info() { true; }
+    case $1 in
+        -v|--verbose)
+            # Unless the user requests otherwise, in which case log informational messages.
+            info() { log "$@"; }
+            ;;
+    esac
+    test-icbm
+}
 
-test-icbm
+main "$@"

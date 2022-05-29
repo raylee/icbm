@@ -33,9 +33,7 @@ var (
 func main() {
 	flag.Usage = func() { fmt.Fprint(os.Stderr, usage) }
 	flag.Parse()
-
-	log.Println("host", platform(), "http", *httpaddr,
-		"version", Version, "buildtime", BuildTime, "builder", Builder)
+	log.Printf(ident())
 
 	server := serve(*httpaddr)
 	processSignals()
