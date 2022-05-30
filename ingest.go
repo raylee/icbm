@@ -41,7 +41,6 @@ func clamp(x, low, high float64) float64 {
 // processUpdate takes a set of samples and appends them to the correct history
 func processUpdate(u ICBMreport) error {
 	filename := dataPath(u.FridgeName + ".tsv")
-	log.Printf("Update saved to %s\n", filename)
 	chartData := ""
 	for _, s := range u.StableSamples {
 		history[u.FridgeName] = append(history[u.FridgeName], s)

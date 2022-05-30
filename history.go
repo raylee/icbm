@@ -10,9 +10,11 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 )
 
 func readReport(fn string) (iu ICBMreport, err error) {
@@ -36,25 +38,24 @@ func readReport(fn string) (iu ICBMreport, err error) {
 }
 
 func repack(fridge string) {
+	fridgeDataPath := dataPath(fridge, ".") // filesystem path to this fridge's archives
 	// Get a sorted list of entries under data/{fridge}/ .
-	ff, err := os.ReadDir(dataPath(fridge, "."))
+	ff, err := os.ReadDir(fridgeDataPath)
 	if err != nil {
-		log.Printf("couldn't read data archive %s: %s\n", dataPath(fridge, "."), err)
+		log.Printf("couldn't read data archive %s: %s\n", fridgeDataPath, err)
 	}
-	// Report files are in the format yyyymmddhhmmss.json.gz .
-	var report = regexp.MustCompile("[0-9]{14}.json.gz")
-
-	iu := ICBMreport{
-		FridgeName:    fridge,
-		RawSamples:    []Sample{},
-		StableSamples: []Sample{},
-	}
-
+	// report checks whether the string matches the ICBM report format, yyyymmddhhmmss.json.gz .
+	var report = regexp.MustCompile("[0-9]{14}.json.gz").MatchString
 	var sorted = func(s []Sample) []Sample {
 		sort.Slice(s, func(i, j int) bool {
 			return s[i].Timestamp.Before(s[j].Timestamp)
 		})
 		return s
+	}
+
+	iu := ICBMreport{
+		RawSamples:    []Sample{},
+		StableSamples: []Sample{},
 	}
 
 	// Bundle the data by era (herein, a single day per first 8 of yyyymmddhhmmss).
@@ -66,29 +67,41 @@ func repack(fridge string) {
 		}
 		fn := dataPath(fridge, fmt.Sprintf("%s.json.gz", era))
 		log.Printf("writing summary %s\n", fn)
-		iu := ICBMreport{
+		b, _ := json.Marshal(ICBMreport{
 			FridgeName:    fridge,
 			RawSamples:    sorted(iu.RawSamples),
 			StableSamples: sorted(iu.StableSamples),
-		}
-		b, _ := json.Marshal(iu)
+		})
 		gzWrite(fn, "rollup for era "+fn, b)
 	}
 
-	// For each entry, extract the era, and record the data.
+	// A scan conversion, as the files are in order. For each entry,
+	// extract the era, and record the data.
+	eraFmt := "20060102150405"
+	now := time.Now().Format(eraFmt[:8])
+	archive := path.Join(fridgeDataPath, "archive")
+	err = os.MkdirAll(archive, 0700)
+	if err != nil {
+		log.Printf("Coouldn't create archive folder: %s", err)
+	}
+	log.Println("archiving to", archive)
 	for i := range ff {
-		if !report.MatchString(ff[i].Name()) {
+		if !report(ff[i].Name()) {
 			continue
 		}
 		fn := ff[i].Name()
 		fera := fn[:resolution]
+		if fera == now {
+			break // Don't bundle the current era, it's not finished yet!
+		}
 		if fera != era {
 			writeEra()
 			iu.RawSamples = []Sample{}
 			iu.StableSamples = []Sample{}
 			era = fera
 		}
-		iup, err := readReport(dataPath(fridge, fn))
+		src := dataPath(fridge, fn)
+		iup, err := readReport(src)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -97,6 +110,8 @@ func repack(fridge string) {
 		iu.StableSamples = append(iu.StableSamples, iup.StableSamples...)
 		iu.RawMassFull = iup.RawMassFull
 		iu.RawMassTare = iup.RawMassTare
+		dst := path.Join(archive, ff[i].Name())
+		_ = os.Rename(src, dst)
 	}
 	writeEra()
 
