@@ -27,7 +27,12 @@ var (
 func main() {
 	flag.Usage = func() { fmt.Fprint(os.Stderr, usage) }
 	flag.Parse()
-	log.Println(platform())
+	log.Print(platform())
+
+	if fridge := os.Getenv("ICBMRepack"); fridge != "" {
+		log.Println("Repacking", fridge)
+		go repack(fridge)
+	}
 
 	server := serve(*httpaddr)
 	processSignals()

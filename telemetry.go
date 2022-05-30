@@ -70,7 +70,7 @@ func FilteredHTTPLogger(w io.Writer) io.Writer {
 
 // dataPath returns a path in the /data folder joined by []subdirs underneath it.
 func dataPath(subdirs ...string) string {
-	root := ""
+	root := "data"
 	if superfly() {
 		root = "/data"
 	}
@@ -83,7 +83,7 @@ func dataPath(subdirs ...string) string {
 }
 
 // logUpdate saves the received JSON as a compressed file.
-func logUpdate(u ICBMUpdate, rawData []byte) {
+func logUpdate(u ICBMreport, rawData []byte) {
 	filename := time.Now().Format("20060102150405") + ".json"
 	pathname := dataPath(u.FridgeName, filename) + ".gz"
 	gzWrite(pathname, "icbm telemetry for "+fmt.Sprintf(u.FridgeName), rawData)

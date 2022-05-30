@@ -15,8 +15,8 @@ import (
 )
 
 type (
-	// ICBMUpdate corresponds to the fridge payload.
-	ICBMUpdate struct {
+	// ICBMreport corresponds to the fridge payload.
+	ICBMreport struct {
 		FridgeName    string
 		RawMassFull   int
 		RawMassTare   int
@@ -39,7 +39,7 @@ func clamp(x, low, high float64) float64 {
 }
 
 // processUpdate takes a set of samples and appends them to the correct history
-func processUpdate(u ICBMUpdate) error {
+func processUpdate(u ICBMreport) error {
 	filename := dataPath(u.FridgeName + ".tsv")
 	log.Printf("Update saved to %s\n", filename)
 	chartData := ""
@@ -94,7 +94,7 @@ func icbmUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Your account is disabled, please contact the administrator if you believe this is in error", http.StatusForbidden)
 		return
 	}
-	var data ICBMUpdate
+	var data ICBMreport
 	rawRequest, _ := ioutil.ReadAll(r.Body)
 	if err := json.NewDecoder(bytes.NewReader(rawRequest)).Decode(&data); err != nil {
 		metrics.BadJSON++
