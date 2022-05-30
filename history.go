@@ -12,7 +12,6 @@ import (
 	"os"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -37,15 +36,14 @@ func readReport(fn string) (iu ICBMreport, err error) {
 }
 
 func repack(fridge string) {
-	// get a sorted list of entries under data/{fridge}/20220529172056.json.gz
+	// Get a sorted list of entries under data/{fridge}/ .
 	ff, err := os.ReadDir(dataPath(fridge, "."))
 	if err != nil {
 		log.Printf("couldn't read data archive %s: %s\n", dataPath(fridge, "."), err)
 	}
-	// report files are in the format yyyymmddhhmmss.json.gz
+	// Report files are in the format yyyymmddhhmmss.json.gz .
 	var report = regexp.MustCompile("[0-9]{14}.json.gz")
 
-	year, month := 0, 0
 	iu := ICBMreport{
 		FridgeName:    fridge,
 		RawSamples:    []Sample{},
@@ -59,11 +57,14 @@ func repack(fridge string) {
 		return s
 	}
 
-	var writeMonth = func() {
-		if year == 0 {
+	// Bundle the data by era (herein, a single day per first 8 of yyyymmddhhmmss).
+	const resolution = 8
+	era := ""
+	var writeEra = func() {
+		if era == "" {
 			return
 		}
-		fn := dataPath(fridge, fmt.Sprintf("%04d-%02d.json.gz", year, month))
+		fn := dataPath(fridge, fmt.Sprintf("%s.json.gz", era))
 		log.Printf("writing summary %s\n", fn)
 		iu := ICBMreport{
 			FridgeName:    fridge,
@@ -71,22 +72,21 @@ func repack(fridge string) {
 			StableSamples: sorted(iu.StableSamples),
 		}
 		b, _ := json.Marshal(iu)
-		gzWrite(fn, "monthly rollup", b)
+		gzWrite(fn, "rollup for era "+fn, b)
 	}
 
-	// For each entry, extract the year and month, and record the data.
+	// For each entry, extract the era, and record the data.
 	for i := range ff {
 		if !report.MatchString(ff[i].Name()) {
 			continue
 		}
 		fn := ff[i].Name()
-		ny, _ := strconv.Atoi(fn[0:4])
-		nm, _ := strconv.Atoi(fn[4:6])
-		if ny != year || month != nm {
-			writeMonth()
+		fera := fn[:resolution]
+		if fera != era {
+			writeEra()
 			iu.RawSamples = []Sample{}
 			iu.StableSamples = []Sample{}
-			month, year = nm, ny
+			era = fera
 		}
 		iup, err := readReport(dataPath(fridge, fn))
 		if err != nil {
@@ -98,7 +98,7 @@ func repack(fridge string) {
 		iu.RawMassFull = iup.RawMassFull
 		iu.RawMassTare = iup.RawMassTare
 	}
-	writeMonth()
+	writeEra()
 
 	// write out new tsv
 	processUpdate(iu)
