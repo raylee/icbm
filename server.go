@@ -42,10 +42,6 @@ func assetSrv(path string) http.Handler {
 }
 
 func fileSrv(path string) http.Handler {
-	return gziphandler.GzipHandler(http.FileServer(http.Dir(path)))
-}
-
-func fileSrvPicky(path string) http.Handler {
 	return maybeCompress(http.FileServer(http.Dir(path)))
 }
 
@@ -87,7 +83,6 @@ func Routes() *http.ServeMux {
 		"https://icbm.fly.dev",
 	}
 	mux.Handle("/data/", http.StripPrefix("/data/", cors(fileSrv("/data"), willServeFor...)))
-	mux.Handle("/datanz/", http.StripPrefix("/datanz/", cors(fileSrvPicky("/data"), willServeFor...)))
 	mux.Handle("/static/", http.StripPrefix("/static/", assetSrv("static")))
 	mux.HandleFunc("/version", icbmVersion)
 	return mux
