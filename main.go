@@ -30,7 +30,6 @@ func main() {
 	log.Print(platform())
 
 	if fridge := os.Getenv("ICBMRepack"); fridge != "" {
-		log.Println("Repacking", fridge)
 		go repack(fridge)
 	}
 

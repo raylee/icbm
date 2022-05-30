@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sort"
+	"sync"
 	"time"
 )
 
@@ -33,30 +35,61 @@ type (
 	}
 )
 
-func (l *ICBMreport) Append(r ICBMreport) *ICBMreport {
-	if l == nil {
-		return &r
+// Append samples from the passed report to this one.
+func (r *ICBMreport) Append(n ICBMreport) *ICBMreport {
+	if r == nil {
+		return &n
 	}
-	l.RawSamples = append(l.RawSamples, r.RawSamples...)
-	l.StableSamples = append(l.StableSamples, r.StableSamples...)
-	return l
+	r.RawSamples = append(r.RawSamples, n.RawSamples...)
+	r.StableSamples = append(r.StableSamples, n.StableSamples...)
+	return r
 }
 
+// Sort the samples in this report by time.
+func (r *ICBMreport) Sort() {
+	if r == nil {
+		return
+	}
+	sort.Slice(r.StableSamples, func(i, j int) bool {
+		return r.StableSamples[i].Timestamp.Before(r.StableSamples[j].Timestamp)
+	})
+	sort.Slice(r.RawSamples, func(i, j int) bool {
+		return r.RawSamples[i].Timestamp.Before(r.RawSamples[j].Timestamp)
+	})
+}
+
+// Save a compressed (.json.gz) version of this report to dataPath(fn) + .json.gz.
+func (r *ICBMreport) Save(fn, comment string) {
+	if r == nil {
+		return
+	}
+	if len(fn) < 14 {
+		log.Println("Writing summary " + fn)
+	}
+	fn = dataPath(r.FridgeName, fmt.Sprintf("%s.json.gz", fn))
+	r.Sort()
+	b, _ := json.Marshal(*r)
+	gzWrite(fn, comment, b)
+}
+
+// Trim the Samples to the latest max count.
 func (r *ICBMreport) Trim(max int) {
+	if r == nil {
+		return
+	}
+	var once sync.Once
 	if len(r.RawSamples) > max {
+		once.Do(r.Sort)
 		n := make([]Sample, 0, max)
 		copy(n, r.RawSamples[len(r.RawSamples)-max:])
 		r.RawSamples = n
 	}
 	if len(r.StableSamples) > max {
+		once.Do(r.Sort)
 		n := make([]Sample, 0, max)
 		copy(n, r.StableSamples[len(r.StableSamples)-max:])
 		r.StableSamples = n
 	}
-}
-
-func (r *ICBMreport) Len() (int, int) {
-	return len(r.RawSamples), len(r.StableSamples)
 }
 
 func clamp(x, low, high float64) float64 {
@@ -132,7 +165,9 @@ func icbmUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("Error processing update:", err)
 	}
-	logUpdate(data, rawRequest)
+
+	filename := time.Now().Format("20060102150405") + ".json"
+	data.Save(filename, "icbm update for "+data.FridgeName)
 	io.WriteString(w, fmt.Sprintf("Fridge status updated for %s, thank you %s\n", data.FridgeName, user.Username))
 }
 

@@ -5,7 +5,6 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
-	"fmt"
 	"io"
 	"log"
 	"math"
@@ -82,17 +81,10 @@ func dataPath(subdirs ...string) string {
 	return filename
 }
 
-// logUpdate saves the received JSON as a compressed file.
-func logUpdate(u ICBMreport, rawData []byte) {
-	filename := time.Now().Format("20060102150405") + ".json"
-	pathname := dataPath(u.FridgeName, filename) + ".gz"
-	gzWrite(pathname, "icbm telemetry for "+fmt.Sprintf(u.FridgeName), rawData)
-}
-
 func gzWrite(fn, comment string, data []byte) {
 	f, e := os.Create(fn)
 	if e != nil {
-		log.Println("Could not store json measurements for updated chartdata: " + fn)
+		log.Printf("Could not create output file %s: %s\n", fn, e)
 		metrics.Errors++
 	}
 
