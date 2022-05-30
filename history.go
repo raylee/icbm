@@ -71,7 +71,7 @@ func repack(fridge string) {
 			StableSamples: sorted(iu.StableSamples),
 		}
 		b, _ := json.Marshal(iu)
-		go gzWrite(fn, "monthly rollup", b)
+		gzWrite(fn, "monthly rollup", b)
 	}
 
 	// For each entry, extract the year and month, and record the data.
@@ -84,8 +84,8 @@ func repack(fridge string) {
 		nm, _ := strconv.Atoi(fn[4:6])
 		if ny != year || month != nm {
 			writeMonth()
-			iu.RawSamples = iu.RawSamples[:0]
-			iu.StableSamples = iu.StableSamples[:0]
+			iu.RawSamples = []Sample{}
+			iu.StableSamples = []Sample{}
 			month, year = nm, ny
 		}
 		iup, err := readReport(dataPath(fridge, fn))
