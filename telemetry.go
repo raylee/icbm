@@ -68,42 +68,6 @@ func FilteredHTTPLogger(w io.Writer) io.Writer {
 	}}
 }
 
-const (
-	italicOn  = "\033[3m"
-	italicOff = "\033[23m"
-	resetAll  = "\033[0m"
-)
-
-type italic struct {
-	*os.File
-}
-
-// Write implements an italic io.Writer interface.
-func (i italic) Write(p []byte) (n int, err error) {
-	defer i.File.Write([]byte(italicOff))
-	// if p contains any resets, fix them up. Not speed critical as this is going to a console.
-	len := 0
-	for _, h := range bytes.Split(p, []byte(resetAll)) {
-		i.File.Write([]byte(resetAll + italicOn))
-		len, err = i.File.Write(h)
-		n += len + 4
-		if err != nil {
-			return
-		}
-	}
-	n -= 4 // we counted one extra reset
-	return
-}
-
-// Italic wraps f to add italics if f is a terminal, otherwise will return f unchanged.
-func Italic(f *os.File) io.Writer {
-	fileInfo, err := f.Stat()
-	if err != nil || fileInfo.Mode()&os.ModeCharDevice == 0 {
-		return f
-	}
-	return &italic{f}
-}
-
 // dataPath returns a path in the /data folder joined by []subdirs underneath it.
 func dataPath(subdirs ...string) string {
 	root := ""
@@ -118,28 +82,29 @@ func dataPath(subdirs ...string) string {
 	return filename
 }
 
-// logData saves the received JSON as a compressed file.
-func logData(u ICBMUpdate, rawData []byte) {
-	now := time.Now()
-	filename := now.Format("20060102150405") + ".json"
+// logUpdate saves the received JSON as a compressed file.
+func logUpdate(u ICBMUpdate, rawData []byte) {
+	filename := time.Now().Format("20060102150405") + ".json"
 	pathname := dataPath(u.FridgeName, filename) + ".gz"
+	gzWrite(pathname, "icbm telemetry for "+fmt.Sprintf(u.FridgeName), rawData)
+}
 
-	f, e := os.Create(pathname)
+func gzWrite(fn, comment string, data []byte) {
+	f, e := os.Create(fn)
 	if e != nil {
-		log.Println("Could not store json measurements for updated chartdata: " + pathname)
+		log.Println("Could not store json measurements for updated chartdata: " + fn)
 		metrics.Errors++
 	}
 
 	zw := gzip.NewWriter(f)
 	// Setting the Header fields is optional, but polite.
-	zw.Name = filename
-	zw.Comment = "icbm telemetry for " + fmt.Sprintf(u.FridgeName)
-	zw.ModTime = now
+	zw.Name = fn
+	zw.Comment = comment
+	zw.ModTime = time.Now()
 
-	if _, e := zw.Write(rawData); e != nil {
+	if _, e := zw.Write(data); e != nil {
 		log.Print(e)
 	}
-
 	if e := zw.Close(); e != nil {
 		log.Print(e)
 	}
@@ -163,8 +128,8 @@ func logStats(ss []Sample) {
 	s.Min, s.Max, s.Avg = r(s.Min), r(s.Max), r(s.Avg)
 	log.Println("Last hour stats", "Percent full", s, "Metrics", metrics)
 	log.Println(
-		"Average HTTP time", time.Duration(metrics.HTTPDuration/uint64(metrics.HTTP)),
-		"Average HTTPS time", time.Duration(metrics.HTTPSDuration/uint64(metrics.HTTPS)),
+		"Average HTTP time", time.Duration(metrics.HTTPDuration/uint64(metrics.HTTP+1)),
+		"Average HTTPS time", time.Duration(metrics.HTTPSDuration/uint64(metrics.HTTPS+1)),
 	)
 	metrics = Metrics{} // reset the metrics
 }

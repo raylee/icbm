@@ -98,7 +98,7 @@ func icbmVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func serve(httpaddr string) *http.Server {
-	logger := log.New(FilteredHTTPLogger(Italic(os.Stderr)), "", log.LstdFlags)
+	logger := log.New(FilteredHTTPLogger(os.Stderr), "", log.LstdFlags)
 	srv := &http.Server{
 		Addr:     httpaddr,
 		ErrorLog: logger,
@@ -142,8 +142,8 @@ func platform() string {
 	if superfly() {
 		var x string
 		peers, _ := net.LookupHost("icbm.internal")
-		regions, _ := net.LookupTXT("icbm.internal")
-		siblings, _ := net.LookupHost("_apps.internal")
+		regions, _ := net.LookupTXT("regions.icbm.internal")
+		siblings, _ := net.LookupTXT("_apps.internal")
 		x += fmt.Sprintf("host:     %s.fly.dev\n", os.Getenv("FLY_APP_NAME"))
 		x += fmt.Sprintf("listen:   %s\n", *httpaddr)
 		x += fmt.Sprintf("id:       %s\n", os.Getenv("FLY_ALLOC_ID"))

@@ -107,7 +107,7 @@ func icbmUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("Error processing update:", err)
 	}
-	logData(data, rawRequest)
+	logUpdate(data, rawRequest)
 	io.WriteString(w, fmt.Sprintf("Fridge status updated for %s, thank you %s\n", data.FridgeName, user.Username))
 }
 
