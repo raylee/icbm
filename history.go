@@ -1,6 +1,6 @@
 package main
 
-// This file handles maintenance of history files.
+// This handles maintenance of history files.
 
 import (
 	"compress/gzip"
@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"path"
 	"regexp"
@@ -53,24 +54,21 @@ func repack(fridge string) {
 		return s
 	}
 
-	iu := ICBMreport{
-		RawSamples:    []Sample{},
-		StableSamples: []Sample{},
-	}
+	var bundle *ICBMreport
 
 	// Bundle the data by era (herein, a single day per first 8 of yyyymmddhhmmss).
 	const resolution = 8
 	era := ""
 	var writeEra = func() {
-		if era == "" {
+		if bundle == nil {
 			return
 		}
 		fn := dataPath(fridge, fmt.Sprintf("%s.json.gz", era))
 		log.Printf("writing summary %s\n", fn)
 		b, _ := json.Marshal(ICBMreport{
 			FridgeName:    fridge,
-			RawSamples:    sorted(iu.RawSamples),
-			StableSamples: sorted(iu.StableSamples),
+			RawSamples:    sorted(bundle.RawSamples),
+			StableSamples: sorted(bundle.StableSamples),
 		})
 		gzWrite(fn, "rollup for era "+fn, b)
 	}
@@ -78,13 +76,15 @@ func repack(fridge string) {
 	// A scan conversion, as the files are in order. For each entry,
 	// extract the era, and record the data.
 	eraFmt := "20060102150405"
-	now := time.Now().Format(eraFmt[:8])
+	now := time.Now().Format(eraFmt[:resolution])
 	archive := path.Join(fridgeDataPath, "archive")
-	err = os.MkdirAll(archive, 0700)
-	if err != nil {
-		log.Printf("Coouldn't create archive folder: %s", err)
+	if err = os.MkdirAll(archive, 0700); err != nil {
+		log.Printf("Couldn't create archive folder: %s", err)
 	}
 	log.Println("archiving to", archive)
+
+	latest := &ICBMreport{}
+
 	for i := range ff {
 		if !report(ff[i].Name()) {
 			continue
@@ -96,25 +96,26 @@ func repack(fridge string) {
 		}
 		if fera != era {
 			writeEra()
-			iu.RawSamples = []Sample{}
-			iu.StableSamples = []Sample{}
 			era = fera
+			bundle = nil
 		}
 		src := dataPath(fridge, fn)
-		iup, err := readReport(src)
+		rep, err := readReport(src)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-		iu.RawSamples = append(iu.RawSamples, iup.RawSamples...)
-		iu.StableSamples = append(iu.StableSamples, iup.StableSamples...)
-		iu.RawMassFull = iup.RawMassFull
-		iu.RawMassTare = iup.RawMassTare
+		bundle = bundle.Append(rep)
+		latest = latest.Append(rep)
 		dst := path.Join(archive, ff[i].Name())
 		_ = os.Rename(src, dst)
+		if rand.Float32() > 0.95 {
+			latest.Trim(31 * 24 * 60 / 5)
+		}
 	}
 	writeEra()
 
 	// write out new tsv
-	processUpdate(iu)
+	processUpdate(*latest)
+	log.Println("archive finished")
 }

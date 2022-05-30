@@ -33,6 +33,32 @@ type (
 	}
 )
 
+func (l *ICBMreport) Append(r ICBMreport) *ICBMreport {
+	if l == nil {
+		return &r
+	}
+	l.RawSamples = append(l.RawSamples, r.RawSamples...)
+	l.StableSamples = append(l.StableSamples, r.StableSamples...)
+	return l
+}
+
+func (r *ICBMreport) Trim(max int) {
+	if len(r.RawSamples) > max {
+		n := make([]Sample, 0, max)
+		copy(n, r.RawSamples[len(r.RawSamples)-max:])
+		r.RawSamples = n
+	}
+	if len(r.StableSamples) > max {
+		n := make([]Sample, 0, max)
+		copy(n, r.StableSamples[len(r.StableSamples)-max:])
+		r.StableSamples = n
+	}
+}
+
+func (r *ICBMreport) Len() (int, int) {
+	return len(r.RawSamples), len(r.StableSamples)
+}
+
 func clamp(x, low, high float64) float64 {
 	x = math.Max(low, x)
 	return math.Min(x, high)
@@ -86,7 +112,7 @@ func icbmUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	user := getLogin(w, r)
 	if user == nil {
-		http.Error(w, "Fridge status not updated, please supply an API key", http.StatusUnauthorized)
+		http.Error(w, "Fridge status not updated, please supply an authorized API key", http.StatusUnauthorized)
 		return
 	}
 	if !user.Valid {
