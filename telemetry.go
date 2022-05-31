@@ -34,19 +34,19 @@ type Metrics struct {
 var metrics = Metrics{}
 var statsChan chan Sample = AggregateUpdates() // StatsChan aggregates samples written to it.
 
-type filter struct {
+type denoise struct {
 	needle  []byte
 	counter *int64
 }
 
-// filterWriter suppresses logging specific errors and converts them to metrics instead
-type filterWriter struct {
+// denoiseWriter suppresses logging specific errors and converts them to metrics instead
+type denoiseWriter struct {
 	out     io.Writer
-	filters []filter
+	filters []denoise
 }
 
 // filterWriter's Write silently suppresses lines which contain any needles in fw.filters.
-func (fw *filterWriter) Write(p []byte) (n int, err error) {
+func (fw *denoiseWriter) Write(p []byte) (n int, err error) {
 	for _, f := range fw.filters {
 		if bytes.Contains(p, f.needle) {
 			if f.counter != nil {
@@ -61,7 +61,7 @@ func (fw *filterWriter) Write(p []byte) (n int, err error) {
 // FilteredHTTPLogger removes a bunch of noise from the logs and converts them to metrics instead.
 func FilteredHTTPLogger(w io.Writer) io.Writer {
 	// My assumption is that these are due to random port scans.
-	return &filterWriter{w, []filter{
+	return &denoiseWriter{w, []denoise{
 		{[]byte("http: TLS handshake error from"), &metrics.TCPResets},
 		{[]byte("server: error reading preface from client"), &metrics.ReadTimeout},
 	}}

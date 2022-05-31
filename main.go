@@ -25,7 +25,9 @@ var (
 )
 
 func init() {
-	log.SetFlags(0)
+	if superfly() {
+		log.SetFlags(0)
+	}
 }
 
 func main() {

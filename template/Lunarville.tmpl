@@ -1,88 +1,275 @@
 <!DOCTYPE html>
-<html>
+
 <head>
-	<meta charset="UTF-8">
-    <title>{{.Title}}</title>
-    <meta name="author" content="Ministry of Booze-Alchemy" />
+<title>Fridge status</title>
+<style>
+html,
+body,
+div {
+    padding: 0;
+    border: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
 
-	<style>
-	h1 { margin-top: 2em; margin-bottom: 2em;}
-	</style>
+body {
+    background-color: black;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-	<link rel="stylesheet" href="static/chartist.min.css">
+.backdrop {
+    /* opacity: 0.99; */
+  background-color: #007;
+  height: 60vmin;
+  width: 60vmin;
+  transform: rotate(-0.03turn);
+  border-radius: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.beerglass {
+    height: 30vmin;
+    width: 28vmin;
+    border: 1vmin solid rgba(216, 228, 233);
+    border-radius: 0 0 10% 10%;
+    background-color: #F5A510;
+    position: relative;
+}
+
+.glass__reflect1,
+.glass__reflect2 {
+    width: 2vmin;
+    border-radius: 2vmin;
+    background-color: ghostwhite;
+    position: absolute;
+    left: 10%;
+}
+
+.glass__reflect1 {
+    height: 8vmin;
+    top: 22.5%;
+}
+
+.glass__reflect2 {
+    height: 2vmin;
+    top: 10%;
+}
+
+.glass__empty {
+    left: -1%;
+    background-color: ghostwhite;
+    position: absolute;
+    top: -0.1vmin;
+    width: 102%;
+    height: 28vmin;
+    padding: 0px;
+    clip-path: polygon(0% 0%, 0% 0%, 100% 0%, 100% 0%);
+}
+
+.glass__shadow {
+    height: 28.1vmin;
+    width: 6.2vmin;
+    border-radius: 0 0 2vmin 40%;
+    background-color: #D57406;
+
+    position: relative;
+    left: 76%;
+}
+
+.glass__froth1,
+.glass__froth2,
+.glass__froth3,
+.glass__froth4,
+.glass__froth5,
+.glass__froth6,
+.glass__froth7,
+.glass__froth8,
+.glass__froth9,
+.glass__froth10,
+.glass__froth11,
+.glass__froth12 {
+    width: 6.5vmin;
+    height: 6.5vmin;
+    border-radius: 100%;
+    background-color: rgba(248, 248, 255, 0.95);
+    position: relative;
+    z-index: -1;
+}
+
+.glass__froth1 {
+    bottom: 120%;
+    left: 1%;
+    background-color: rgba(248, 248, 255, 0.9);
+}
+
+.glass__froth2 {
+    bottom: 155%;
+    left: 5%;
+}
+
+.glass__froth3 {
+    bottom: 190%;
+    left: 20%;
+}
+
+.glass__froth4 {
+    bottom: 190%;
+    left: 40%;
+}
+
+.glass__froth5 {
+    bottom: 210%;
+    left: 20%;
+}
+
+.glass__froth6 {
+    bottom: 250%;
+    left: 23%;
+}
+
+.glass__froth7 {
+    bottom: 275%;
+    left: 40%;
+}
+
+.glass__froth8 {
+    bottom: 288%;
+    left: 58%;
+}
+
+.glass__froth9 {
+    bottom: 305%;
+    left: 75%;
+}
+
+.glass__froth10 {
+    bottom: 345%;
+    left: 60%;
+}
+
+.glass__froth11 {
+    bottom: 360%;
+    left: 68%;
+}
+
+.glass__froth12 {
+    bottom: 400%;
+    left: 42%;
+}
+
+.glass__handle {
+    width: 8vmin;
+    height: 18vmin;
+    border-radius: 50%;
+    border: 1.5vmin solid rgba(216, 228, 233);
+    box-shadow: inset 0 0 0 0.5vmin #acb6ba;
+    position: relative;
+    bottom: 365%;
+    left: 100%;
+}
+</style>
 </head>
+
 <body>
-<center>
-<h1>Lunarville Needs Beer!</h1>
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-<input type="hidden" name="cmd" value="_s-xclick">
-<input type="hidden" name="hosted_button_id" value="7US5NS838Z8AA">
-<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" alt="Click here to keep the fridge full.">
-</form>
-</h1>
-<!--
-<div id="fridgeData">
-{{range .Items}}<div>{{ . }}</div>{{else}}<div><strong>no rows</strong></div>{{end}}
+<div class="backdrop">
+    <div class="beerglass">
+        <div class="glass__shadow"></div>
+
+        <div class="glass__reflect1"></div>
+        <div class="glass__reflect2"></div>
+
+        <div class="glass__froth1"></div>
+        <div class="glass__froth2"></div>
+        <div class="glass__froth3"></div>
+        <div class="glass__froth4"></div>
+        <div class="glass__froth5"></div>
+        <div class="glass__froth6"></div>
+        <div class="glass__froth7"></div>
+        <div class="glass__froth8"></div>
+        <div class="glass__froth9"></div>
+        <div class="glass__froth10"></div>
+        <div class="glass__froth11"></div>
+        <div class="glass__froth12"></div>
+
+        <div class="glass__handle"></div>
+		<div class="glass__empty"></div>
+    </div>
 </div>
--->
-</center>
-<div class="ct-chart ct-golden-section"></div>
 </body>
 
-<script src="static/chartist.min.js"></script>
-<script src="static/moment.min.js"></script>
-<script src='https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.5/lodash.min.js'></script>
-<script src='https://unpkg.com/axios@0.16.1/dist/axios.min.js'></script>
-
 <script>
+    var bbl = {
+        el:     document.querySelectorAll('div[class^=glass__froth]'),
+        jitter: Array.from(Array(12), () => { return Math.random() * 8; }),
+        order:  [12,11,10,2,3,9,7,6,4,8,5,1],
+        time:   0,
+        toPop:  0,
+        left:   12,
 
-function chartData(tsv) {
-	var rows = tsv.split(/\r?\n/)
-	var data = []
-	for (var i = 0; i < rows.length; i++) {
-		var row=rows[i].split("\t")
-		if (row.length == 2) {
-			var datapoint = { x: new Date(parseInt(row[0] * 1000)), y: parseFloat(row[1])*100 }
-			data.push(datapoint)
-		}
-	}
-	var chart = new Chartist.Line('.ct-chart',
-		{
-			series: [ { name: 'ICBM', data: data } ]
-		}, {
-			axisY: {
-				type: Chartist.FixedScaleAxis,
-				high: 100,
-				low: 0,
-				ticks: [0,20,40,60,80,100]
-			},
-			lineSmooth: Chartist.Interpolation.step(),
-			showPoint: false,
-			axisX: {
-				type: Chartist.AutoScaleAxis,
-				divisor: 10,
-				labelInterpolationFnc: function(value) {
-					return moment(value).format('MMM D');
-				}
-			}
-		}
-	})
-}
+        pop: function(toPop) {
+            this.toPop = toPop
+            window.setTimeout(bbl.shimmer, 2000, this)
+        },
 
+        shimmer: function(bbl) {
+            var keep = 12 - bbl.toPop
+            if (bbl.left <= keep) {
+                return
+            }
+            window.setTimeout(bbl.shimmer, 250, bbl)
+            bbl.time += 1
+            var bubble = bbl.order[0] - 1
+            if (bbl.time < bbl.jitter[0]) {
+                // shimmer a bit before we go
+                f =  Math.random()
+                f += 0.8 * (1.0-f)  // nudge f toward 1.0
+                p =  100 * f
+                bbl.el[bubble].style.backgroundColor = "rgba(248,248,255," + p + "%)"
+                return
+            }
+            // poparoo
+            bbl.jitter.shift()
+            bbl.order.shift()
+            bbl.left -= 1
+            bbl.time = 0
+            console.log({bbl, bubble})
+            bbl.el[bubble].style.backgroundColor = "rgba(0,0,0,0)"
+        }
+    }
 
-function init() {
-    var self = this
-    axios.get("data/Lunarville.tsv")
-		.then(
-			function (response) {
-				chartData(response.data)
-			})
-		.catch(
-			function (error) {
-				self.error = "Could not reach the API: " + error
-			})
-}
+    var beer = {
+        fill: function(pct) {
+            pct = Math.min(1.0, Math.max(0, pct))
+            pct = (1.0 - pct)*100 // flip to percent empty
+            let poly="polygon(0% 0%, 0% " + (pct*1.1-10) + "%, 100% " +(pct*1.2) + "%, 100% 0%)"
+            let b=document.querySelector('.glass__empty')
+            b.style.clipPath = poly
+        },
 
-init()
+        slosh: function(fillPct) {
+            this.f = fillPct
+            window.setTimeout(this.jostle, 60, this)
+        },
+        time: 0,
+        tC: 20,
+        jostle: function(beer) {
+            beer.time += 1.0/beer.tC
+            beer.fill(beer.f + 0.20 * Math.sin(beer.time) * Math.exp(-beer.time))
+            if (beer.time > beer.tC*3) {
+                beer.fill(beer.f)
+                return
+            }
+            window.setTimeout(beer.jostle, 60, beer)
+        }
+    }
+
+    bbl.pop({{.Pop}})
+    beer.slosh({{.FillPercent}})
 </script>
+
 </html>

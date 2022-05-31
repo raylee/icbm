@@ -3,20 +3,16 @@ package main
 import (
 	"bytes"
 	_ "embed"
-	"fmt"
 	"html/template"
 	"io"
 	"log"
+	"math"
 	"net/http"
-)
-
-const (
-	maxHistory = 100 // maximum number of samples to keep per fridge in memory
+	"time"
 )
 
 var (
-	tmpl    *template.Template
-	history = map[string][]Sample{} // History is a cache of the most recent data per fridge.
+	tmpl *template.Template
 )
 
 func init() {
@@ -35,20 +31,40 @@ func BeverageStatus(endpoint string) func(http.ResponseWriter, *http.Request) {
 // the most recent data.
 func renderPage(fridge string) string {
 	data := struct {
-		Title string
-		Items []string
-	}{Title: "Lunarville beer collective - " + fridge}
+		Title       string
+		Items       []string
+		Pop         int
+		FillPercent float64
+		Report      *ICBMreport
+		LastTime    time.Time
+	}{}
+	data.Title = fridge + " status"
+	data.Report = tapReport[fridge]
 
-	// just show the last five samples, descending order
-	samples := len(history[fridge])
-	for i := 1; i <= 5 && i < samples; i++ {
-		data.Items = append(data.Items, fmt.Sprintf("%v", history[fridge][samples-i]))
+	if data.Report == nil {
+		return "Not found!" // make a 404 page
 	}
+	count := len(tapReport[fridge].StableSamples)
+	s := tapReport[fridge].StableSamples[count-1]
+	data.FillPercent = s.PubFillRatio
+	data.LastTime = s.Timestamp
+
+	maxCount := int(maxAge / (300 * time.Second))
+	fracMissing := float64(maxCount-count) / float64(maxCount)
+
+	data.Pop = 12 - int(math.Floor(12.0*fracMissing))
+	if data.Pop < 0 {
+		data.Pop = 0
+	}
+	if data.Pop > 12 {
+		data.Pop = 12
+	}
+	log.Println(fracMissing, data.Pop, count, maxCount)
 
 	var res bytes.Buffer
 	err := tmpl.ExecuteTemplate(&res, fridge+".tmpl", data)
 	if err != nil {
-		log.Println("Could not execute template")
+		log.Println("Could not execute template:", err)
 	}
 	return res.String()
 }

@@ -35,6 +35,8 @@ type (
 	}
 )
 
+type Samples []Sample
+
 // Append samples from the passed report to this one.
 func (r *ICBMreport) Append(n ICBMreport) *ICBMreport {
 	if r == nil {
@@ -45,8 +47,8 @@ func (r *ICBMreport) Append(n ICBMreport) *ICBMreport {
 	return r
 }
 
-// Sort the samples in this report by time.
-func (r *ICBMreport) Sort() {
+// sort the samples in this report by time.
+func (r *ICBMreport) sort() {
 	if r == nil {
 		return
 	}
@@ -67,7 +69,7 @@ func (r *ICBMreport) Save(fn, comment string) {
 		log.Println("Writing summary " + fn)
 	}
 	fn = dataPath(r.FridgeName, fmt.Sprintf("%s.json.gz", fn))
-	r.Sort()
+	r.sort()
 	b, _ := json.Marshal(*r)
 	gzWrite(fn, comment, b)
 }
@@ -79,17 +81,27 @@ func (r *ICBMreport) Trim(max int) {
 	}
 	var once sync.Once
 	if len(r.RawSamples) > max {
-		once.Do(r.Sort)
-		n := make([]Sample, 0, max)
-		copy(n, r.RawSamples[len(r.RawSamples)-max:])
-		r.RawSamples = n
+		once.Do(r.sort)
+		r.RawSamples = last(r.RawSamples, max)
 	}
 	if len(r.StableSamples) > max {
-		once.Do(r.Sort)
-		n := make([]Sample, 0, max)
-		copy(n, r.StableSamples[len(r.StableSamples)-max:])
-		r.StableSamples = n
+		once.Do(r.sort)
+		r.StableSamples = last(r.StableSamples, max)
 	}
+}
+
+// Since keeps only the samples more recent than the duration ago.
+func (r ICBMreport) Since(d time.Duration) {
+	r.sort()
+	notBefore := time.Now().Add(-d)
+	from := sort.Search(len(r.RawSamples), func(i int) bool {
+		return r.RawSamples[i].Timestamp.After(notBefore)
+	})
+	r.RawSamples = last(r.RawSamples, len(r.RawSamples)-from)
+	from = sort.Search(len(r.StableSamples), func(i int) bool {
+		return r.StableSamples[i].Timestamp.After(notBefore)
+	})
+	r.StableSamples = last(r.StableSamples, len(r.StableSamples)-from)
 }
 
 func clamp(x, low, high float64) float64 {
@@ -102,18 +114,14 @@ func processUpdate(u ICBMreport) error {
 	filename := dataPath(u.FridgeName + ".tsv")
 	chartData := ""
 	for _, s := range u.StableSamples {
-		history[u.FridgeName] = append(history[u.FridgeName], s)
-		x := clamp(s.PubFillRatio, 0.0, 1.0)
-		chartData += fmt.Sprintf("%d\t%g\n", s.Timestamp.Unix(), x)
+		s.PubFillRatio = clamp(s.PubFillRatio, 0.0, 1.0)
+		chartData += fmt.Sprintf("%d\t%g\n", s.Timestamp.Unix(), s.PubFillRatio)
 		metrics.DataPoints++
 		statsChan <- s
 	}
+	tapReport[u.FridgeName] = tapReport[u.FridgeName].Append(u)
+	tapReport[u.FridgeName].Since(31 * 24 * time.Hour)
 
-	excess := len(history[u.FridgeName]) - maxHistory
-	if excess > 0 {
-		copy(history[u.FridgeName], history[u.FridgeName][excess:])
-		history[u.FridgeName] = history[u.FridgeName][0:maxHistory]
-	}
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		metrics.Errors++
@@ -166,7 +174,7 @@ func icbmUpdate(w http.ResponseWriter, r *http.Request) {
 		log.Println("Error processing update:", err)
 	}
 
-	filename := time.Now().Format("20060102150405") + ".json"
+	filename := time.Now().Format("20060102150405")
 	data.Save(filename, "icbm update for "+data.FridgeName)
 	io.WriteString(w, fmt.Sprintf("Fridge status updated for %s, thank you %s\n", data.FridgeName, user.Username))
 }
@@ -227,4 +235,14 @@ func NthFromEnd(haystack []byte, needle byte, n int) int {
 		}
 	}
 	return -1
+}
+
+func last[T any](slice []T, max int) []T {
+	n := make([]T, 0, max)
+	start := len(slice) - max
+	if start < 0 {
+		start = 0
+	}
+	copy(n, slice[start:])
+	return n
 }
