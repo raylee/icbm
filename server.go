@@ -6,15 +6,14 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
-	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -29,7 +28,11 @@ var AssetFS embed.FS
 // cors takes a Handler and a list of allowed origin domains and returns a new
 // Handler that enforces CORS to those sources.
 func cors(next http.Handler, origins ...string) http.Handler {
-	c := corsMid.New(corsMid.Options{AllowedOrigins: origins, AllowCredentials: true, MaxAge: 300})
+	c := corsMid.New(corsMid.Options{
+		AllowedOrigins:   origins,
+		AllowCredentials: true,
+		MaxAge:           300,
+	})
 	return c.Handler(next)
 }
 
@@ -38,7 +41,7 @@ func assetSrv(path string) http.Handler {
 	if err != nil {
 		return http.NotFoundHandler()
 	}
-	return gziphandler.GzipHandler(http.FileServer(http.FS(fsys)))
+	return maybeCompress(http.FileServer(http.FS(fsys)))
 }
 
 func fileSrv(path string) http.Handler {
@@ -47,21 +50,59 @@ func fileSrv(path string) http.Handler {
 
 func maybeCompress(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasSuffix(r.URL.Path, ".gz") {
-			h = gziphandler.GzipHandler(h)
+		switch strings.ToLower(filepath.Ext(r.URL.Path)) {
+		case ".html", ".css", ".tsv", ".txt", ".js", ".md":
+			h = noCache(gziphandler.GzipHandler(h))
 		}
 		h.ServeHTTP(w, r)
 	})
 }
 
-func onHit(h http.Handler, counter *int64, duration *uint64) http.Handler {
+var (
+	noCacheHeaders = map[string]string{
+		"Expires":         time.Unix(0, 0).Format(time.RFC1123),
+		"Cache-Control":   "no-cache, no-store, no-transform, must-revalidate, private, max-age=0",
+		"Pragma":          "no-cache",
+		"X-Accel-Expires": "0",
+	}
+	etagHeaders = []string{
+		"ETag",
+		"If-Modified-Since",
+		"If-Match",
+		"If-None-Match",
+		"If-Range",
+		"If-Unmodified-Since",
+	}
+)
+
+// noCache configures the return headers to request not caching the results.
+// per https://github.com/go-chi/chi/blob/master/middleware/nocache.go
+func noCache(h http.Handler) http.Handler {
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt64(counter, 1)
-		start := time.Now()
+		// Delete any ETag headers.
+		for _, v := range etagHeaders {
+			if r.Header.Get(v) != "" {
+				r.Header.Del(v)
+			}
+		}
+		// Set our headers.
+		for k, v := range noCacheHeaders {
+			w.Header().Set(k, v)
+		}
 		h.ServeHTTP(w, r)
-		t := time.Since(start)
-		atomic.AddUint64(duration, uint64(t))
 	})
+}
+
+var willServeFor = []string{
+	"http://lunarville.org",
+	"http://www.lunarville.org",
+	"https://lunarville.org",
+	"https://www.lunarville.org",
+	"https://api.evq.io",
+	"https://icbm.api.evq.io",
+	"http://localhost:*",
+	"https://icbm.fly.dev",
 }
 
 // Routes returns the mappings for handling web requests.
@@ -69,27 +110,14 @@ func Routes() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/", assetSrv("static"))
 	// mux.HandleFunc("/", BeverageStatus("Lunarville"))
+	mux.Handle("/b/", http.StripPrefix("/b/", http.HandlerFunc(tapStatus)))
 	mux.HandleFunc("/bev", BeverageStatus("Lunarville"))
 	mux.HandleFunc("/bevbeta", BeverageStatus("Lunarville-beta"))
 	mux.HandleFunc("/icbm/v1", icbmUpdate)
-	willServeFor := []string{
-		"http://lunarville.org",
-		"http://www.lunarville.org",
-		"https://lunarville.org",
-		"https://www.lunarville.org",
-		"https://api.evq.io",
-		"https://icbm.api.evq.io",
-		"http://localhost:*",
-		"https://icbm.fly.dev",
-	}
 	mux.Handle("/data/", http.StripPrefix("/data/", cors(fileSrv("/data"), willServeFor...)))
 	mux.Handle("/static/", http.StripPrefix("/static/", assetSrv("static")))
 	mux.HandleFunc("/version", icbmVersion)
 	return mux
-}
-
-func icbmVersion(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, platform())
 }
 
 func serve(httpaddr string) *http.Server {
@@ -97,7 +125,7 @@ func serve(httpaddr string) *http.Server {
 	srv := &http.Server{
 		Addr:     httpaddr,
 		ErrorLog: logger,
-		Handler:  onHit(Routes(), &metrics.HTTP, &metrics.HTTPDuration),
+		Handler:  Routes(),
 	}
 	startHTTP := func(srv *http.Server) {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -158,10 +186,10 @@ func getLogin(w http.ResponseWriter, r *http.Request) *User {
 	apikey := r.Header.Get("x-icbm-api-key")
 	creds, found := users[apikey]
 	if !found || !creds.Valid {
-		metrics.BadLogins++
+		// metrics.BadLogins++
 		return nil
 	}
-	metrics.APILogins++
+	// metrics.APILogins++
 	return &creds
 }
 

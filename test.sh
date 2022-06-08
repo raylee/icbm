@@ -80,12 +80,17 @@ try() {
 
 test-icbm() {
     info "$(api -X GET https://lunarville.org/version)"
+	info ""
+	
     try get http://lunarville.org/
     try post https://lunarville.org/icbm/v1 "$(payload Lunarville-beta)"
     try get https://lunarville.org/data/Lunarville.tsv
+	info ""
 
     info "Testing proxy (old addresses)"
-    info "$(api -X GET https://icbm.api.evq.io/version)"
+    info "$(api -X GET https://icbm.api.evq.io/b/Lunarville)"
+    info ""
+
     try post https://icbm.api.evq.io/icbm/v1 "$(payload Lunarville-beta)"
     try get https://icbm.api.evq.io/version
     try get https://api.evq.io:8081/version

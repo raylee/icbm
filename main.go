@@ -25,6 +25,7 @@ var (
 )
 
 func init() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	if superfly() {
 		log.SetFlags(0)
 	}
@@ -35,6 +36,7 @@ func main() {
 	flag.Parse()
 
 	log.Print(platform())
+	go servePrometheus()
 
 	if fridge := os.Getenv("ICBMRepack"); fridge != "" {
 		go repack(fridge)

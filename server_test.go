@@ -42,7 +42,7 @@ func randhex(bytes int) string {
 }
 
 func TestServer(t *testing.T) {
-	server := serve(":8080")
+	server := serve("0.0.0.0:8080")
 	defer shutdown(server)
 	body := strings.NewReader(payload("Lunarville-beta"))
 	req, err := http.NewRequest("POST", "http://localhost:8080/icbm/v1", body)

@@ -26,7 +26,7 @@ func BenchmarkNthFromEnd(b *testing.B) {
 
 func tmpFilename(base string) string {
 	fn := fmt.Sprintf("%s%x", base, rand.Int63())
-	return path.Join(os.TempDir(), fn)
+	return path.Join(".", fn)
 }
 
 func TestLastNth(t *testing.T) {
@@ -71,7 +71,7 @@ func TestTrimIdempotency(t *testing.T) {
 	// try it a few times
 	for i := 0; i < 2; i++ {
 		if err := trimFile(fn, lineCount); err != nil {
-			t.Error("Couldn't trim test file")
+			t.Error("Couldn't trim test file", err)
 		}
 	}
 

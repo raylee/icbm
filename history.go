@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -41,35 +42,28 @@ func readReport(fn string) (rep ICBMreport, err error) {
 		return rep, fmt.Errorf("couldn't gunzip: %w", err)
 	}
 	json.Unmarshal(b, &rep)
+	rep.mu = &sync.Mutex{}
 	return rep, nil
 }
 
-func fridgeReports(fridge string, bundles bool) (fs []fs.DirEntry) {
-	fridgeDataPath := dataPath(fridge, ".")
-	// Get a sorted list of entries under data/{fridge}/ .
-	ff, err := os.ReadDir(fridgeDataPath)
+func readDirRe(path string, re string) (fs []fs.DirEntry, err error) {
+	ff, err := os.ReadDir(path)
 	if err != nil {
-		log.Printf("couldn't read data archive %s: %s\n", fridgeDataPath, err)
+		return
 	}
-
-	// report checks whether the string matches the ICBM report format, yyyymmddhhmmss.json.gz .
-	report := regexp.MustCompile("[0-9]{14}.json.gz").MatchString
-	if bundles {
-		report = regexp.MustCompile("[0-9]{8,14}.json.gz").MatchString
-	}
+	match := regexp.MustCompile(re).MatchString
 	for i := range ff {
-		if !report(ff[i].Name()) {
-			continue
+		if match(ff[i].Name()) {
+			fs = append(fs, ff[i])
 		}
-		fs = append(fs, ff[i])
 	}
-	return fs
+	return
 }
 
 func allTaps() (s []string) {
-	ff, err := os.ReadDir(dataPath("."))
+	ff, err := os.ReadDir(dataPath())
 	if err != nil {
-		log.Printf("couldn't read list taps %s: %s\n", dataPath("."), err)
+		log.Printf("couldn't read list taps %s: %s\n", dataPath(), err)
 		return
 	}
 	for i := range ff {
@@ -87,9 +81,14 @@ func reportTime(rp string) time.Time {
 }
 
 func loadTapReports() {
+	log.Println("Loading tap reports from the last", maxAge)
 	first := time.Now().Add(-maxAge)
 	for _, tap := range allTaps() {
-		reports := fridgeReports(tap, true)
+		reports, err := readDirRe(dataPath(tap), "[0-9]{8,14}.json.gz")
+		if err != nil {
+			log.Printf("couldn't read %s: %s\n", dataPath(tap), err)
+			continue
+		}
 		for i := range reports {
 			name := reports[i].Name()
 			tm := reportTime(name)
@@ -97,7 +96,6 @@ func loadTapReports() {
 				continue // too old, don't bother
 			}
 
-			log.Println("loading", reports[i].Name())
 			src := dataPath(tap, reports[i].Name())
 			rep, err := readReport(src)
 			if err != nil {
@@ -107,8 +105,8 @@ func loadTapReports() {
 			tapReport[tap] = tapReport[tap].Append(rep)
 		}
 		if t := tapReport[tap]; t != nil {
-			t.Since(maxAge)
-			log.Printf("tap report %s : (%d, %d) raw, stable samples loaded\n", t.FridgeName, len(t.RawSamples), len(t.StableSamples))
+			t.KeepSince(maxAge)
+			log.Printf("tap report %s: %d raw, %d stable samples loaded \n", t.FridgeName, len(t.RawSamples), len(t.StableSamples))
 		}
 	}
 }
@@ -126,12 +124,14 @@ func repack(fridge string) {
 	}
 
 	// Get a sorted list of entries under data/{fridge}/ .
-	ff := fridgeReports(fridge, false)
+	ff, err := readDirRe(dataPath(fridge, "."), "[0-9]{14}.json.gz")
+	if err != nil {
+		log.Printf("couldn't read data archive %s: %s\n", fridgeDataPath, err)
+		return
+	}
 
 	// Bundle the data by era (herein, a single day per first 8 of yyyymmddhhmmss).
-
 	var bundle *ICBMreport
-
 	eraFmt := "20060102150405"
 	const resolution = 8
 	now := time.Now().Format(eraFmt[:resolution])
@@ -142,8 +142,8 @@ func repack(fridge string) {
 
 	for i := range ff {
 		fn := ff[i].Name()
-		d, _ := ff[i].Info()
-		d.ModTime()
+		// d, _ := ff[i].Info()
+		// d.ModTime()
 
 		fera := fn[:resolution]
 		if fera == now {
