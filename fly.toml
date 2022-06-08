@@ -20,8 +20,12 @@ processes = []
   private_network = true
 
 [mounts]
-source="icbm_data"
-destination="/data"
+  source="icbm_data"
+  destination="/data"
+
+[metrics]
+  port = 9091
+  path = "/metrics"
 
 [[services]]
   http_checks = []
