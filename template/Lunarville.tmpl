@@ -21,7 +21,7 @@ body {
 }
 
 .backdrop {
-    /* opacity: 0.99; */
+  /* opacity: 0.99; */
   background-color: #007;
   height: 60vmin;
   width: 60vmin;
@@ -202,20 +202,28 @@ body {
 </div>
 </body>
 
+<!-- The lovely markup above is mostly due to the original author, see the
+     beer license in the source repo https://github.com/raylee/icbm .
+     JS below is my fault.
+-->
+
 <script>
+    // A handler for the bubbles.
     var bbl = {
         el:     document.querySelectorAll('div[class^=glass__froth]'),
-        jitter: Array.from(Array(12), () => { return Math.random() * 8; }),
-        order:  [12,11,10,2,3,9,7,6,4,8,5,1],
+        jitter: Array.from(Array(12), () => { return Math.random() * 6 + 2; }),
+        order:  [12,11,10,2,3,9,7,6,4,8,5,1],  // First and last 6 can be randomized separately.
         time:   0,
         toPop:  0,
         left:   12,
-
+        // pop starts an animation which ends with toPop bubbles disappearing.
         pop: function(toPop) {
             this.toPop = toPop
+            this.time = 0
+            this.left = 12
             window.setTimeout(bbl.shimmer, 2000, this)
         },
-
+        // shimmer animates the bubbles.
         shimmer: function(bbl) {
             var keep = 12 - bbl.toPop
             if (bbl.left <= keep) {
@@ -233,16 +241,17 @@ body {
                 return
             }
             // poparoo
+            bbl.el[bubble].style.backgroundColor = "rgba(0,0,0,0)"
             bbl.jitter.shift()
             bbl.order.shift()
             bbl.left -= 1
             bbl.time = 0
-            console.log({bbl, bubble})
-            bbl.el[bubble].style.backgroundColor = "rgba(0,0,0,0)"
         }
     }
 
+    // A class for the beer level.
     var beer = {
+        // fill sets the level from [0, 1]
         fill: function(pct) {
             pct = Math.min(1.0, Math.max(0, pct))
             pct = (1.0 - pct)*100 // flip to percent empty
@@ -250,13 +259,14 @@ body {
             let b=document.querySelector('.glass__empty')
             b.style.clipPath = poly
         },
-
+        // slosh jostles the level a little, ending at fillPct
         slosh: function(fillPct) {
             this.f = fillPct
             window.setTimeout(this.jostle, 60, this)
         },
         time: 0,
         tC: 20,
+        // animate the beer level
         jostle: function(beer) {
             beer.time += 1.0/beer.tC
             beer.fill(beer.f + 0.20 * Math.sin(beer.time) * Math.exp(-beer.time))
