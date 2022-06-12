@@ -4,8 +4,10 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 
 	"io"
 	"io/ioutil"
@@ -80,9 +82,30 @@ func (r *ICBMreport) Save(fn, comment string) {
 	defer r.mu.Unlock()
 	r.sort()
 
-	b, _ := json.Marshal(*r)
 	fn = dataPath(r.FridgeName, fmt.Sprintf("%s.json.gz", fn))
-	gzWrite(fn, comment, b)
+	data, _ := json.Marshal(*r)
+
+	// Compress the data.
+	zdata := &bytes.Buffer{}
+	zw := gzip.NewWriter(zdata)
+	// Setting the header fields is optional, but polite.
+	zw.Name = fn
+	zw.Comment = comment
+	zw.ModTime = time.Now()
+	if _, err := zw.Write(data); err != nil {
+		log.Printf("error compressing %s: %v", fn, err)
+	}
+	zw.Close()
+
+	err := ioutil.WriteFile(fn, zdata.Bytes(), 0644)
+	if err != nil {
+		log.Printf("error writing %s: %v", fn, err)
+	}
+
+	err = s3client.Put(fn, zdata.Bytes())
+	if err != nil {
+		log.Printf("error uploading %s: %v", fn, err)
+	}
 }
 
 // Trim the Samples to the latest max count.
@@ -326,4 +349,18 @@ func average[T constraints.Float | constraints.Integer](slice []T) float64 {
 		sum += float64(slice[i])
 	}
 	return sum / float64(len(slice))
+}
+
+func buildInfo() string {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		log.Println("Could not read build info")
+		return ""
+	}
+
+	s := fmt.Sprintf("%s version %s\n", bi.Path, bi.Main.Version)
+	for _, d := range bi.Settings {
+		s += fmt.Sprintf("%s: %s\n", d.Key, d.Value)
+	}
+	return s
 }

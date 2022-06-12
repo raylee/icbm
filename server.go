@@ -201,7 +201,22 @@ type User struct {
 
 var users = map[string]User{} // The key is the API key.
 
+// Load the .env file if it exists and set the valid environment variables.
+func loadDotEnv() {
+	if f, err := os.ReadFile(".env"); err == nil {
+		for _, line := range strings.Split(string(f), "\n") {
+			if k, v, found := strings.Cut(line, "="); found {
+				v = strings.TrimFunc(v, func(r rune) bool {
+					return r == '"' || r == '\''
+				})
+				os.Setenv(k, v)
+			}
+		}
+	}
+}
+
 func loadUserList() error {
+	loadDotEnv()
 	userdb := os.Getenv("ICBMUserDb")
 	j := strings.NewReader(userdb)
 	dec := json.NewDecoder(j)

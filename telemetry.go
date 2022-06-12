@@ -4,12 +4,10 @@ package main
 
 import (
 	"bytes"
-	"compress/gzip"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
-	"time"
 )
 
 // // Metrics keeps some basic stats about our health and usage for the logs.
@@ -77,33 +75,6 @@ func dataPath(subdirs ...string) string {
 	dir := filepath.Dir(filename)
 	os.MkdirAll(dir, os.ModeDir|0755) // ensure the whole path exists
 	return filename
-}
-
-func gzWriter(w io.WriteCloser, name, comment string, modTime time.Time) gzip.Writer {
-	zw := gzip.NewWriter(w)
-	// Setting the Header fields is optional, but polite.
-	zw.Name = name
-	zw.Comment = comment
-	zw.ModTime = modTime
-	return *zw
-}
-
-func gzWrite(fn, comment string, data []byte) (err error) {
-	f, err := os.Create(fn)
-	if err != nil {
-		// metrics.Errors++
-		return
-	}
-	zw := gzWriter(io.WriteCloser(f), fn, comment, time.Now())
-	if _, e := zw.Write(data); e != nil {
-		// metrics.Errors++
-		return
-	}
-	if e := zw.Close(); e != nil {
-		// metrics.Errors++
-		return
-	}
-	return
 }
 
 func servePrometheus() {

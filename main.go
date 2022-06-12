@@ -36,6 +36,8 @@ func main() {
 	flag.Parse()
 
 	log.Print(platform())
+	log.Print(buildInfo())
+
 	go servePrometheus()
 
 	if fridge := os.Getenv("ICBMRepack"); fridge != "" {
