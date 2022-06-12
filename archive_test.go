@@ -10,6 +10,11 @@ func init() {
 }
 
 func TestS3List(t *testing.T) {
+	const gate = "ICBM_Run_Integration_Tests"
+	if os.Getenv(gate) == "" {
+		t.Skip("set .env variable", gate, "to run this test")
+	}
+
 	s3, err := NewS3Client()
 	if err != nil {
 		t.Fatal(err)
