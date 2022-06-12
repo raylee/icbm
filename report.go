@@ -103,7 +103,7 @@ func (r *ICBMreport) Save(fn, comment string) {
 	}
 
 	err = s3client.Put(fn, zdata.Bytes())
-	if err != nil {
+	if err != nil && err != errUninitialized {
 		log.Printf("error uploading %s: %v", fn, err)
 	}
 }

@@ -34,7 +34,10 @@ type Archive struct {
 	client *s3.S3
 }
 
-var s3client *Archive
+var (
+	s3client         *Archive
+	errUninitialized = fmt.Errorf("s3 client is not yet initialized")
+)
 
 func init() {
 	var err error
@@ -82,7 +85,7 @@ func (ar *Archive) List(prefix string) ([]string, error) {
 
 func (ar *Archive) Put(key string, data []byte) error {
 	if ar == nil {
-		return fmt.Errorf("storage not initialized")
+		return errUninitialized
 	}
 	_, err := ar.client.PutObject(&s3.PutObjectInput{
 		Body:   bytes.NewReader(data),
